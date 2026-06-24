@@ -1,7 +1,7 @@
 /* eslint-disable @next/next/no-img-element */
 
 import Link from "next/link";
-import { ArrowRight } from "lucide-react";
+import { ShoppingBag, ArrowRight } from "lucide-react";
 
 import type { Tables } from "@/lib/database.types";
 

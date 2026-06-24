@@ -1,7 +1,8 @@
 "use client";
 
-import { createBrowserClient, type Database } from "@supabase/ssr";
+import { createBrowserClient } from "@supabase/ssr";
 
+import type { Database } from "@/lib/database.types";
 import {
   isSupabaseConfigured,
   supabasePublishableKey,

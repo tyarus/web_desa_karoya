@@ -24,7 +24,7 @@ interface TemplatePreviewProps {
     layout?: string;
   };
   productCount: number;
-  sampleProducts: Array<{ product_name: string; price: string; description: string }>;
+  sampleProducts: Array<{ name: string; price: string; description: string }>;
 }
 
 const templateConfigs = {

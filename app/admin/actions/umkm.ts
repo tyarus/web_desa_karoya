@@ -26,7 +26,7 @@ export type UMKMInput = {
 export type UMKMProductInput = {
   id?: string;
   umkm_id: string;
-  product_name: string;
+  name: string;
   description: string;
   price?: string;
   image_url?: string;
@@ -72,7 +72,7 @@ export async function saveUMKM(input: FormData | UMKMInput) {
     if (file) {
       console.log('File found, uploading...');
       const uploadedUrl = await uploadPublicImage(supabase, file, 'umkm');
-      coverUrl = uploadedUrl;
+      coverUrl = uploadedUrl ?? undefined;
     } else {
       coverUrl = formString(input.get('cover_url')) || undefined;
       console.log('Using cover_url:', coverUrl);
@@ -195,7 +195,7 @@ export async function saveUMKMProduct(input: FormData | UMKMProductInput) {
   console.log('=== saveUMKMProduct called ===');
   const supabase = await createClient();
   let umkm_id = '';
-  let product_name = '';
+  let name = '';
   let description = '';
   let price = '';
   let imageUrl: string | undefined;
@@ -203,12 +203,12 @@ export async function saveUMKMProduct(input: FormData | UMKMProductInput) {
 
   if (input instanceof FormData) {
     umkm_id = formString(input.get('umkm_id'));
-    product_name = formString(input.get('product_name'));
+    name = formString(input.get('product_name'));
     description = formString(input.get('description'));
     price = formString(input.get('price')) || '';
     id = formString(input.get('id')) || undefined;
 
-    console.log('Product FormData:', { umkm_id, product_name, description, price, id });
+    console.log('Product FormData:', { umkm_id, name, description, price, id });
 
     const file = formFile(input.get('image'));
 
@@ -218,20 +218,20 @@ export async function saveUMKMProduct(input: FormData | UMKMProductInput) {
         file,
         'umkm/products'
       );
-      imageUrl = uploadedUrl;
+      imageUrl = uploadedUrl ?? undefined;
     } else {
       imageUrl = formString(input.get('image_url')) || undefined;
     }
   } else {
     umkm_id = input.umkm_id;
-    product_name = input.product_name;
+    name = input.name;
     description = input.description;
     price = input.price || '';
     id = input.id;
     imageUrl = input.image_url;
   }
 
-  if (!umkm_id || !product_name || !description) {
+  if (!umkm_id || !name || !description) {
     return {
       ok: false,
       message: 'UMKM ID, nama produk, dan deskripsi harus diisi',
@@ -240,10 +240,9 @@ export async function saveUMKMProduct(input: FormData | UMKMProductInput) {
   }
 
   try {
-    // Use 'name' column (product_name column was dropped)
     const insertData = {
       umkm_id,
-      name: product_name,
+      name,
       description,
       price,
       image_url: imageUrl,

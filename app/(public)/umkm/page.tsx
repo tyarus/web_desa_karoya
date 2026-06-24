@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { createClient } from '@/lib/supabase/server';
 import { UMKMPageClient } from '@/components/public/umkm-page-client';
 

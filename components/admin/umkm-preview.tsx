@@ -29,7 +29,7 @@ interface UMKMPreviewProps {
   className?: string;
 }
 
-export function UMKMPreview({ data, currentStep, className }: UMKMPreviewProps) {
+export function UMKMPreview({ data, className }: UMKMPreviewProps) {
   if (!data.name) {
     return (
       <div className={cn("flex items-center justify-center rounded-xl border-2 border-dashed border-zinc-200 bg-zinc-50 p-8", className)}>

@@ -308,7 +308,12 @@ export type Database = {
           phone: string | null;
           whatsapp: string | null;
           email: string | null;
+          instagram: string | null;
+          facebook: string | null;
+          address: string | null;
+          maps_url: string | null;
           template_id: string | null;
+          accent_color: string | null;
           status: string | null;
           created_at: string;
           updated_at: string;
@@ -323,7 +328,12 @@ export type Database = {
           phone?: string | null;
           whatsapp?: string | null;
           email?: string | null;
+          instagram?: string | null;
+          facebook?: string | null;
+          address?: string | null;
+          maps_url?: string | null;
           template_id?: string | null;
+          accent_color?: string | null;
           status?: string | null;
           created_at?: string;
           updated_at?: string;
@@ -338,7 +348,12 @@ export type Database = {
           phone?: string | null;
           whatsapp?: string | null;
           email?: string | null;
+          instagram?: string | null;
+          facebook?: string | null;
+          address?: string | null;
+          maps_url?: string | null;
           template_id?: string | null;
+          accent_color?: string | null;
           status?: string | null;
           created_at?: string;
           updated_at?: string;
@@ -349,7 +364,7 @@ export type Database = {
         Row: {
           id: string;
           umkm_id: string;
-          product_name: string;
+          name: string;
           description: string;
           image_url: string | null;
           price: string | null;
@@ -359,7 +374,7 @@ export type Database = {
         Insert: {
           id?: string;
           umkm_id: string;
-          product_name: string;
+          name: string;
           description: string;
           image_url?: string | null;
           price?: string | null;
@@ -369,7 +384,7 @@ export type Database = {
         Update: {
           id?: string;
           umkm_id?: string;
-          product_name?: string;
+          name?: string;
           description?: string;
           image_url?: string | null;
           price?: string | null;
@@ -383,54 +398,6 @@ export type Database = {
             isOneToOne: false;
           }
         ];
-      };
-      umkm_templates: {
-        Row: {
-          id: string;
-          name: string | null;
-          description: string | null;
-          layout: string | null;
-          color_scheme: string | null;
-          products_per_row: number | null;
-          show_price: boolean | null;
-          show_description: boolean | null;
-          primary_color: string | null;
-          secondary_color: string | null;
-          font_family: string | null;
-          accent_color: string | null;
-          created_at: string | null;
-        };
-        Insert: {
-          id?: string;
-          name?: string | null;
-          description?: string | null;
-          layout?: string | null;
-          color_scheme?: string | null;
-          products_per_row?: number | null;
-          show_price?: boolean | null;
-          show_description?: boolean | null;
-          primary_color?: string | null;
-          secondary_color?: string | null;
-          font_family?: string | null;
-          accent_color?: string | null;
-          created_at?: string | null;
-        };
-        Update: {
-          id?: string;
-          name?: string | null;
-          description?: string | null;
-          layout?: string | null;
-          color_scheme?: string | null;
-          products_per_row?: number | null;
-          show_price?: boolean | null;
-          show_description?: boolean | null;
-          primary_color?: string | null;
-          secondary_color?: string | null;
-          font_family?: string | null;
-          accent_color?: string | null;
-          created_at?: string | null;
-        };
-        Relationships: [];
       };
     };
     Views: Record<string, never>;

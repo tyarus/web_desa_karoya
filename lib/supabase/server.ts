@@ -1,7 +1,6 @@
-import { createServerClient } from "@supabase/ssr";
+import { createServerClient, type Database } from "@supabase/ssr";
 import { cookies } from "next/headers";
 
-import type { Database } from "@/lib/database.types";
 import {
   isSupabaseConfigured,
   supabasePublishableKey,
@@ -33,7 +32,7 @@ export async function createClient() {
   });
 }
 
-export async function createOptionalClient() {
+export async function createOptionalClient(): Promise<ReturnType<typeof createClient> | null> {
   if (!isSupabaseConfigured()) return null;
   return createClient();
 }

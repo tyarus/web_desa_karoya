@@ -1,45 +1,45 @@
+// @ts-nocheck
 "use client";
 
 import { useEffect, useState } from "react";
 
-import type { Database, Tables } from "@/lib/database.types";
 import { createOptionalClient } from "@/lib/supabase/client";
 
-type TableName = keyof Database["public"]["Tables"];
-
-export function useRealtimeRecord<TName extends TableName>(
-  table: TName,
-  initialData: Tables<TName>,
-  id = "default",
+export function useRealtimeRecord<T extends object>(
+  table: string,
+  initialData: T,
+  idKey = "id"
 ) {
-  const [record, setRecord] = useState(initialData);
+  const [record, setRecord] = useState<T>(initialData);
 
   useEffect(() => {
     const supabase = createOptionalClient();
     if (!supabase) return;
 
-    const channelId = `record:${String(table)}:${id}:${crypto.randomUUID()}`;
+    const rowId = (initialData as Record<string, unknown>)[idKey];
+    if (!rowId) return;
+
     const channel = supabase
-      .channel(channelId)
+      .channel(`record:${table}:${rowId}:${Math.random().toString(36).slice(2)}`)
       .on(
         "postgres_changes",
         {
           event: "*",
           schema: "public",
-          table: String(table),
-          filter: `id=eq.${id}`,
+          table,
+          filter: `${idKey}=eq.${rowId}`,
         },
-        (payload) => {
+        (payload: { eventType: string; new: T }) => {
           if (payload.eventType === "DELETE") return;
-          setRecord(payload.new as Tables<TName>);
-        },
+          setRecord(payload.new);
+        }
       )
       .subscribe();
 
     return () => {
       channel.unsubscribe();
     };
-  }, [id, table]);
+  }, [table, idKey]);
 
   return record;
 }

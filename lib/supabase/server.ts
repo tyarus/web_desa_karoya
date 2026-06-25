@@ -1,7 +1,6 @@
 import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
 
-import type { Database } from "@/lib/database.types";
 import {
   isSupabaseConfigured,
   supabasePublishableKey,
@@ -15,7 +14,7 @@ export async function createClient() {
 
   const cookieStore = await cookies();
 
-  return createServerClient<Database>(supabaseUrl, supabasePublishableKey, {
+  return createServerClient(supabaseUrl, supabasePublishableKey, {
     cookies: {
       getAll() {
         return cookieStore.getAll();
@@ -33,7 +32,7 @@ export async function createClient() {
   });
 }
 
-export async function createOptionalClient(): Promise<ReturnType<typeof createClient> | null> {
+export async function createOptionalClient() {
   if (!isSupabaseConfigured()) return null;
   return createClient();
 }

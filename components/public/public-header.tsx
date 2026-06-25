@@ -17,6 +17,7 @@ const navItems = [
   { href: "/profil", label: "Profil" },
   { href: "/berita", label: "Berita" },
   { href: "/layanan", label: "Layanan" },
+  { href: "/lacak", label: "Lacak" },
   { href: "/galeri", label: "Galeri" },
   { href: "/umkm", label: "UMKM" },
   { href: "/kontak", label: "Kontak" },

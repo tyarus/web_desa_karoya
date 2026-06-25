@@ -1,11 +1,22 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 
 import type { Database, Tables } from "@/lib/database.types";
 import { createOptionalClient } from "@/lib/supabase/client";
 
 type TableName = keyof Database["public"]["Tables"];
+
+function applyOptions<T extends Tables<TableName>>(
+  items: T[],
+  options?: {
+    predicate?: (row: T) => boolean;
+    sort?: (a: T, b: T) => number;
+  }
+): T[] {
+  const filtered = options?.predicate ? items.filter(options.predicate) : items;
+  return options?.sort ? [...filtered].sort(options.sort) : filtered;
+}
 
 export function useRealtimeList<TName extends TableName>(
   table: TName,
@@ -13,20 +24,20 @@ export function useRealtimeList<TName extends TableName>(
   options?: {
     predicate?: (row: Tables<TName>) => boolean;
     sort?: (a: Tables<TName>, b: Tables<TName>) => number;
-  },
+  }
 ) {
-  const [rows, setRows] = useState(initialData);
+  // Apply options immediately on initial data
+  const [rows, setRows] = useState(() => applyOptions(initialData, options));
+
+  // Memoize options for dependency comparison
+  const optionsKey = useMemo(
+    () => JSON.stringify(options),
+    [options?.predicate, options?.sort]
+  );
 
   useEffect(() => {
     const supabase = createOptionalClient();
     if (!supabase) return;
-
-    const applyOptions = (items: Tables<TName>[]) => {
-      const filtered = options?.predicate
-        ? items.filter(options.predicate)
-        : items;
-      return options?.sort ? [...filtered].sort(options.sort) : filtered;
-    };
 
     const channel = supabase
       .channel(`list:${String(table)}:${crypto.randomUUID()}`)
@@ -38,6 +49,7 @@ export function useRealtimeList<TName extends TableName>(
             if (payload.eventType === "DELETE") {
               return applyOptions(
                 current.filter((row) => row.id !== payload.old.id),
+                options
               );
             }
 
@@ -47,16 +59,16 @@ export function useRealtimeList<TName extends TableName>(
               ? current.map((row) => (row.id === nextRow.id ? nextRow : row))
               : [nextRow, ...current];
 
-            return applyOptions(nextRows);
+            return applyOptions(nextRows, options);
           });
-        },
+        }
       )
       .subscribe();
 
     return () => {
       channel.unsubscribe();
     };
-  }, [options, table]);
+  }, [table, optionsKey]);
 
   return rows;
 }

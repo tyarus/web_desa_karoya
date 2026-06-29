@@ -7,10 +7,12 @@ export const dynamic = 'force-dynamic';
 export default async function UMKMPage() {
   const supabase = await createClient();
 
-  const { data: umkms = [] } = await supabase
+  const { data: umkmsData } = await supabase
     .from('umkm')
     .select('*')
     .order('created_at', { ascending: false });
+
+  const umkms = Array.isArray(umkmsData) ? umkmsData : [];
 
   return <UMKMPageClient umkms={umkms} />;
 }

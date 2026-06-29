@@ -19,7 +19,6 @@ export default async function UMKMDetailPage({ params }: UMKMDetailPageProps) {
   const { slug } = await params;
   const supabase = await createClient();
 
-  // Fetch UMKM by slug (show both published and draft for now)
   const { data: umkm } = await supabase
     .from('umkm')
     .select('*')
@@ -30,17 +29,14 @@ export default async function UMKMDetailPage({ params }: UMKMDetailPageProps) {
     notFound();
   }
 
-  // Check if umkm is published, if not show message
-  const isPublished = umkm.status === 'published';
-
-  // Fetch products for this UMKM
-  const { data: products = [] } = await supabase
+  const { data: productsData } = await supabase
     .from('umkm_products')
     .select('*')
     .eq('umkm_id', umkm.id)
     .order('created_at', { ascending: false });
 
-  // Determine which template to render
+  const products = Array.isArray(productsData) ? productsData : [];
+
   const templateId = umkm.template_id || 'A';
 
   return (
@@ -55,13 +51,6 @@ export default async function UMKMDetailPage({ params }: UMKMDetailPageProps) {
           <span className="hidden sm:inline">Kembali</span>
         </Link>
       </div>
-
-      {/* Draft Warning */}
-      {!isPublished && (
-        <div className="fixed right-4 top-[72px] z-20 rounded-lg bg-amber-100 px-3 py-1.5 text-xs font-medium text-amber-800 shadow-lg sm:top-20 sm:text-sm">
-          ⚠️ Belum dipublikasi
-        </div>
-      )}
 
       {/* Render Template Based on Selection */}
       {templateId === 'A' && <TemplateA umkm={umkm} products={products} />}

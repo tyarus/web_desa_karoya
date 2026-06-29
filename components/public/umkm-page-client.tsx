@@ -8,7 +8,7 @@ import type { Tables } from "@/lib/database.types";
 
 export function UMKMPageClient({ umkms }: { umkms: Tables<"umkm">[] }) {
   const liveUMKMs = useRealtimeList("umkm", umkms, {
-    predicate: (umkm) => umkm.status === "published",
+    predicate: (umkm) => umkm.status === "published" || umkm.status === "active",
     sort: (a, b) =>
       new Date(b.created_at).getTime() - new Date(a.created_at).getTime(),
   });

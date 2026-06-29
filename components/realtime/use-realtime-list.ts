@@ -7,7 +7,7 @@ import { createOptionalClient } from "@/lib/supabase/client";
 
 export function useRealtimeList<T>(
   table: string,
-  initialData: T[],
+  initialData: T[] | null | undefined,
   options?: {
     predicate?: (row: T) => boolean;
     sort?: (a: T, b: T) => number;
@@ -15,12 +15,13 @@ export function useRealtimeList<T>(
 ) {
   const [rows, setRows] = useState<T[]>(() => {
     // Apply options to initial data immediately
-    let result = initialData || [];
+    const data = Array.isArray(initialData) ? initialData : [];
+    let result = [...data];
     if (options?.predicate) {
       result = result.filter(options.predicate);
     }
     if (options?.sort) {
-      result = [...result].sort(options.sort);
+      result.sort(options.sort);
     }
     return result;
   });

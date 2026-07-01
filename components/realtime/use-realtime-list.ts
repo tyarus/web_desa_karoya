@@ -1,11 +1,10 @@
-// @ts-nocheck
 "use client";
 
 import { useEffect, useState } from "react";
 
 import { createOptionalClient } from "@/lib/supabase/client";
 
-export function useRealtimeList<T>(
+export function useRealtimeList<T extends { id: string }>(
   table: string,
   initialData: T[] | null | undefined,
   options?: {
@@ -14,7 +13,6 @@ export function useRealtimeList<T>(
   }
 ) {
   const [rows, setRows] = useState<T[]>(() => {
-    // Apply options to initial data immediately
     const data = Array.isArray(initialData) ? initialData : [];
     let result = [...data];
     if (options?.predicate) {
@@ -30,45 +28,47 @@ export function useRealtimeList<T>(
     const supabase = createOptionalClient();
     if (!supabase) return;
 
-    const applyOptions = (items: T[]) => {
-      let result = items;
-      if (options?.predicate) {
-        result = result.filter(options.predicate);
-      }
-      if (options?.sort) {
-        result = [...result].sort(options.sort);
-      }
-      return result;
-    };
-
     const channel = supabase
       .channel(`list:${table}:${Math.random().toString(36).slice(2)}`)
       .on(
         "postgres_changes",
         { event: "*", schema: "public", table },
-        (payload: { eventType: string; old?: { id: string }; new: T }) => {
-          setRows((current) => {
-            if (payload.eventType === "DELETE" && payload.old) {
-              return applyOptions(current.filter((row: T & { id: string }) => row.id !== payload.old!.id));
-            }
+        (payload: { eventType: string; old?: { id: string }; new: T }
+      ) => {
+        setRows((current) => {
+          if (payload.eventType === "DELETE" && payload.old) {
+            return current.filter((row) => row.id !== payload.old!.id);
+          }
 
-            const nextRow = payload.new as T;
-            const rowWithId = nextRow as T & { id: string };
-            const exists = current.some((row: T & { id: string }) => row.id === rowWithId.id);
-            const nextRows = exists
-              ? current.map((row: T & { id: string }) => (row.id === rowWithId.id ? nextRow : row))
-              : [nextRow, ...current];
+          const nextRow = payload.new as T;
+          const exists = current.some((row) => row.id === nextRow.id);
 
-            return applyOptions(nextRows);
-          });
-        }
+          let nextRows: T[];
+          if (exists) {
+            nextRows = current.map((row) => (row.id === nextRow.id ? nextRow : row));
+          } else {
+            nextRows = [nextRow, ...current];
+          }
+
+          // Apply filter
+          if (options?.predicate) {
+            nextRows = nextRows.filter(options.predicate);
+          }
+          // Apply sort
+          if (options?.sort) {
+            nextRows.sort(options.sort);
+          }
+
+          return nextRows;
+        });
+      }
       )
       .subscribe();
 
     return () => {
       channel.unsubscribe();
     };
-  }, [table, options]);
+  }, [table]);
 
   return rows;
 }

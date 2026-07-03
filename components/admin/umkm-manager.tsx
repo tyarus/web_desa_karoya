@@ -11,10 +11,11 @@ import { toast } from 'sonner';
 import type { ColumnDef } from '@tanstack/react-table';
 import { Edit3, ChevronLeft, ChevronRight, X, Save } from 'lucide-react';
 
-import { deleteUMKM, saveUMKM, saveUMKMProduct } from '@/app/admin/actions/umkm';
+import { deleteUMKM, saveUMKM, saveUMKMProduct, toggleUMKMStatus } from '@/app/admin/actions/umkm';
 import { ConfirmDeleteDialog } from '@/components/admin/confirm-delete-dialog';
 import { DataTable } from '@/components/admin/data-table';
 import { UMKMStepper, UMKMStepperProgress, Step } from '@/components/admin/umkm-stepper';
+import { Select } from '@/components/ui/select';
 import { UMKMStepIdentity } from '@/components/admin/umkm-step-identity';
 import { UMKMStepTemplate, TEMPLATES } from '@/components/admin/umkm-step-template';
 import { UMKMStepProducts, Product } from '@/components/admin/umkm-step-products';
@@ -54,7 +55,7 @@ const umkmFormSchema = z.object({
   address: z.string().optional(),
   maps_url: z.string().optional(),
   // Meta
-  status: z.enum(['draft', 'published']).default('draft'),
+  status: z.enum(['draft', 'published', 'active']).default('draft'),
 });
 
 type UmkmFormData = z.infer<typeof umkmFormSchema>;
@@ -185,7 +186,7 @@ export function UMKMManager({ initialUMKMs, initialProducts }: UMKMManagerProps)
       facebook: umkm.facebook || '',
       address: umkm.address || '',
       maps_url: umkm.maps_url || '',
-      status: (umkm.status as 'draft' | 'published') || 'draft',
+      status: (umkm.status as 'draft' | 'published' | 'active') || 'draft',
     });
     setCurrentStep(1);
   }
@@ -304,9 +305,23 @@ export function UMKMManager({ initialUMKMs, initialProducts }: UMKMManagerProps)
       {
         header: 'Status',
         cell: ({ row }) => (
-          <Badge variant={row.original.status === 'published' ? 'default' : 'muted'}>
-            {row.original.status === 'published' ? 'Terbit' : 'Draft'}
-          </Badge>
+          <Select
+            aria-label="Status UMKM"
+            defaultValue={row.original.status || 'draft'}
+            onChange={async (e) => {
+              const newStatus = e.target.value as 'draft' | 'published' | 'active';
+              const result = await toggleUMKMStatus(row.original.id, newStatus);
+              if (result.ok) {
+                toast.success(result.message);
+              } else {
+                toast.error(result.message);
+              }
+            }}
+          >
+            <option value="draft">Draft</option>
+            <option value="published">Terbit</option>
+            <option value="active">Active</option>
+          </Select>
         ),
       },
       {
@@ -330,15 +345,9 @@ export function UMKMManager({ initialUMKMs, initialProducts }: UMKMManagerProps)
             <ConfirmDeleteDialog
               title="Hapus UMKM?"
               description={`"${row.original.name}" akan dihapus.`}
-              onConfirm={() => {
-                startTransition(async () => {
-                  const result = await deleteUMKM(row.original.id);
-                  if (result.ok) {
-                    toast.success(result.message);
-                  } else {
-                    toast.error(result.message);
-                  }
-                });
+              onConfirm={async () => {
+                const result = await deleteUMKM(row.original.id);
+                return result;
               }}
             />
           </div>

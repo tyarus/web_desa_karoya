@@ -4,6 +4,7 @@
 import { createClient } from '@/lib/supabase/server';
 import { uploadPublicImage } from '@/lib/supabase/storage';
 import { formFile, formString } from '@/lib/action-utils';
+import { normalizeGoogleMapsEmbedUrl } from '@/lib/utils';
 import { revalidatePath } from 'next/cache';
 
 export type UMKMInput = {
@@ -21,7 +22,7 @@ export type UMKMInput = {
   email?: string;
   template_id?: string;
   accent_color?: string;
-  status?: 'draft' | 'published';
+  status?: 'draft' | 'published' | 'active';
 };
 
 export type UMKMProductInput = {
@@ -48,7 +49,7 @@ export async function saveUMKM(input: FormData | UMKMInput) {
   let email = '';
   let coverUrl: string | undefined;
   let templateId = 'A';
-  let status: 'draft' | 'published' = 'draft';
+  let status: 'draft' | 'published' | 'active' = 'draft';
   let id: string | undefined;
 
   if (input instanceof FormData) {
@@ -63,7 +64,7 @@ export async function saveUMKM(input: FormData | UMKMInput) {
     maps_url = formString(input.get('maps_url')) || '';
     email = formString(input.get('email')) || '';
     templateId = formString(input.get('template_id')) || 'A';
-    status = (formString(input.get('status')) as 'draft' | 'published') || 'draft';
+    status = (formString(input.get('status')) as 'draft' | 'published' | 'active') || 'draft';
     id = formString(input.get('id')) || undefined;
 
     console.log('FormData values:', { name, description, owner_name, templateId, status, id });
@@ -95,7 +96,9 @@ export async function saveUMKM(input: FormData | UMKMInput) {
     coverUrl = input.cover_url;
   }
 
-  console.log('Processed values:', { name, description, owner_name, templateId, status, coverUrl });
+  maps_url = normalizeGoogleMapsEmbedUrl(maps_url) || maps_url;
+
+  console.log('Processed values:', { name, description, owner_name, templateId, status, coverUrl, maps_url });
 
   if (!name || !description || !owner_name) {
     console.log('Validation failed: missing required fields');
@@ -171,24 +174,25 @@ export async function saveUMKM(input: FormData | UMKMInput) {
   }
 }
 
-export async function deleteUMKM(id: string) {
+export async function toggleUMKMStatus(
+  id: string,
+  status: 'draft' | 'published' | 'active',
+) {
   const supabase = await createClient();
 
   try {
-    const { error } = await supabase.from('umkm').delete().eq('id', id);
+    const { error } = await supabase
+      .from('umkm')
+      .update({ status })
+      .eq('id', id);
 
     if (error) throw error;
+    revalidatePath('/admin/umkm');
     revalidatePath('/umkm');
-    return {
-      ok: true,
-      message: 'UMKM berhasil dihapus',
-    };
+
+    return { ok: true, message: `Status diubah ke ${status}` };
   } catch (error) {
-    return {
-      ok: false,
-      message:
-        error instanceof Error ? error.message : 'Terjadi kesalahan saat menghapus UMKM',
-    };
+    return { ok: false, message: 'Gagal ubah status' };
   }
 }
 
@@ -307,6 +311,28 @@ export async function deleteUMKMProduct(id: string) {
       ok: false,
       message:
         error instanceof Error ? error.message : 'Terjadi kesalahan saat menghapus produk',
+    };
+  }
+}
+
+export async function deleteUMKM(id: string) {
+  const supabase = await createClient();
+
+  try {
+    const { error } = await supabase.from('umkm').delete().eq('id', id);
+
+    if (error) throw error;
+    revalidatePath('/admin/umkm');
+    revalidatePath('/umkm');
+    return {
+      ok: true,
+      message: 'UMKM berhasil dihapus',
+    };
+  } catch (error) {
+    return {
+      ok: false,
+      message:
+        error instanceof Error ? error.message : 'Terjadi kesalahan saat menghapus UMKM',
     };
   }
 }

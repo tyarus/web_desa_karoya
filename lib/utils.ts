@@ -25,6 +25,34 @@ export function slugify(value: string) {
     .replace(/^-|-$/g, "");
 }
 
+export function normalizeGoogleMapsEmbedUrl(value: string | null | undefined) {
+  if (!value) return null;
+
+  try {
+    const url = new URL(value.trim());
+    const hostname = url.hostname.toLowerCase();
+
+    if (!hostname.includes('google.com') && !hostname.includes('google.co')) {
+      return null;
+    }
+
+    if (url.pathname.includes('/maps/embed')) {
+      return url.toString();
+    }
+
+    if (url.searchParams.has('q')) {
+      const q = url.searchParams.get('q') || '';
+      const embedUrl = new URL('https://www.google.com/maps/embed');
+      embedUrl.searchParams.set('q', q);
+      return embedUrl.toString();
+    }
+
+    return null;
+  } catch {
+    return null;
+  }
+}
+
 export function splitLines(value: string | null | undefined) {
   return (value ?? "")
     .split("\n")

@@ -4,6 +4,7 @@
 
 import { MapPin } from 'lucide-react';
 import type { Tables } from '@/lib/database.types';
+import { normalizeGoogleMapsEmbedUrl } from '@/lib/utils';
 
 interface TemplateBProps {
   umkm: Tables<'umkm'>;
@@ -159,16 +160,32 @@ export function TemplateB({ umkm, products }: TemplateBProps) {
             </div>
             {umkm.maps_url && (
               <div className="h-48 overflow-hidden sm:h-64">
-                <iframe
-                  src={umkm.maps_url}
-                  width="100%"
-                  height="100%"
-                  style={{ border: 0 }}
-                  allowFullScreen
-                  loading="lazy"
-                  referrerPolicy="no-referrer-when-downgrade"
-                  title="Lokasi UMKM"
-                />
+                {normalizeGoogleMapsEmbedUrl(umkm.maps_url) ? (
+                  <iframe
+                    src={normalizeGoogleMapsEmbedUrl(umkm.maps_url) || ''}
+                    width="100%"
+                    height="100%"
+                    style={{ border: 0 }}
+                    allowFullScreen
+                    loading="lazy"
+                    referrerPolicy="no-referrer-when-downgrade"
+                    title="Lokasi UMKM"
+                  />
+                ) : (
+                  <div className="flex h-full flex-col items-center justify-center rounded-xl border border-dashed border-zinc-200 bg-zinc-50 p-4 text-center">
+                    <p className="text-sm text-zinc-600">
+                      URL Google Maps tidak dapat ditampilkan di frame.
+                    </p>
+                    <a
+                      href={umkm.maps_url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="mt-3 rounded-lg bg-[#1B4332] px-4 py-2 text-sm font-semibold text-white"
+                    >
+                      Buka di Google Maps
+                    </a>
+                  </div>
+                )}
               </div>
             )}
           </div>

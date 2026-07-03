@@ -4,6 +4,7 @@
 
 import { MapPin, Phone } from 'lucide-react';
 import type { Tables } from '@/lib/database.types';
+import { normalizeGoogleMapsEmbedUrl } from '@/lib/utils';
 
 // WhatsApp SVG Icon
 function WhatsAppIcon({ className }: { className?: string }) {
@@ -193,17 +194,33 @@ export function TemplateC({ umkm, products }: TemplateCProps) {
           {/* Map */}
           {umkm.maps_url && (
             <div className="mt-6 overflow-hidden rounded-xl shadow-sm sm:mt-8">
-              <iframe
-                src={umkm.maps_url}
-                width="100%"
-                height="250"
-                style={{ border: 0 }}
-                allowFullScreen
-                loading="lazy"
-                referrerPolicy="no-referrer-when-downgrade"
-                title="Lokasi UMKM"
-                className="grayscale"
-              />
+              {normalizeGoogleMapsEmbedUrl(umkm.maps_url) ? (
+                <iframe
+                  src={normalizeGoogleMapsEmbedUrl(umkm.maps_url) || ''}
+                  width="100%"
+                  height="250"
+                  style={{ border: 0 }}
+                  allowFullScreen
+                  loading="lazy"
+                  referrerPolicy="no-referrer-when-downgrade"
+                  title="Lokasi UMKM"
+                  className="grayscale"
+                />
+              ) : (
+                <div className="rounded-xl border border-dashed border-zinc-200 bg-zinc-50 p-6 text-center">
+                  <p className="text-sm text-zinc-600">
+                    URL Google Maps tidak valid untuk tampilan embed.
+                  </p>
+                  <a
+                    href={umkm.maps_url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="mt-4 inline-flex rounded-lg bg-[#1B4332] px-4 py-2 text-sm font-semibold text-white"
+                  >
+                    Buka di Google Maps
+                  </a>
+                </div>
+              )}
             </div>
           )}
         </section>

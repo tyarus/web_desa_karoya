@@ -4,6 +4,7 @@
 
 import { MapPin, Phone } from 'lucide-react';
 import type { Tables } from '@/lib/database.types';
+import { normalizeGoogleMapsEmbedUrl } from '@/lib/utils';
 
 interface TemplateAProps {
   umkm: Tables<'umkm'>;
@@ -178,18 +179,34 @@ export function TemplateA({ umkm, products }: TemplateAProps) {
             </div>
 
             {umkm.maps_url && (
-              <div className="mt-8 overflow-hidden rounded-xl shadow-md sm:mt-12">
-                <iframe
-                  src={umkm.maps_url}
-                  width="100%"
-                  height="300"
-                  style={{ border: 0 }}
-                  allowFullScreen
-                  loading="lazy"
-                  referrerPolicy="no-referrer-when-downgrade"
-                  title="Lokasi UMKM"
-                  className="grayscale"
-                />
+              <div className="mt-8 rounded-xl shadow-md sm:mt-12">
+                {normalizeGoogleMapsEmbedUrl(umkm.maps_url) ? (
+                  <iframe
+                    src={normalizeGoogleMapsEmbedUrl(umkm.maps_url) || ''}
+                    width="100%"
+                    height="300"
+                    style={{ border: 0 }}
+                    allowFullScreen
+                    loading="lazy"
+                    referrerPolicy="no-referrer-when-downgrade"
+                    title="Lokasi UMKM"
+                    className="grayscale"
+                  />
+                ) : (
+                  <div className="rounded-xl border border-dashed border-zinc-200 bg-zinc-50 p-6 text-center">
+                    <p className="text-sm text-zinc-600">
+                      URL Google Maps yang diberikan bukan URL embed, sehingga peta tidak dapat ditampilkan di dalam frame.
+                    </p>
+                    <a
+                      href={umkm.maps_url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="mt-4 inline-flex rounded-lg bg-[#1B4332] px-4 py-2 text-sm font-semibold text-white transition hover:bg-[#164b32]"
+                    >
+                      Buka peta di Google Maps
+                    </a>
+                  </div>
+                )}
               </div>
             )}
           </div>

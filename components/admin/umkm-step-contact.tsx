@@ -4,6 +4,7 @@
 import { UseFormReturn } from 'react-hook-form';
 import { FormField } from '@/components/ui/form-field';
 import { Input } from '@/components/ui/input';
+import { Select } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 
 export interface ContactFormData {
@@ -12,6 +13,7 @@ export interface ContactFormData {
   facebook: string;
   address: string;
   maps_url: string;
+  status: 'draft' | 'published' | 'active';
 }
 
 interface UMKMStepContactProps {
@@ -81,6 +83,18 @@ export function UMKMStepContact({ form }: UMKMStepContactProps) {
         </FormField>
 
         <FormField
+          label="Status UMKM"
+          error={errors.status?.message}
+          helper="Pilih status UMKM untuk mengontrol tampilannya di halaman publik"
+        >
+          <Select {...register('status')}>
+            <option value="draft">Draft</option>
+            <option value="published">Terbit</option>
+            <option value="active">Active</option>
+          </Select>
+        </FormField>
+
+        <FormField
           label="Alamat Lengkap"
           error={errors.address?.message}
           hint="Masukkan alamat lengkap untuk ditampilkan di halaman"
@@ -95,12 +109,12 @@ export function UMKMStepContact({ form }: UMKMStepContactProps) {
         <FormField
           label="Google Maps Embed URL"
           error={errors.maps_url?.message}
-          hint="Tempelkan URL Google Maps untuk menampilkan lokasi (opsional)"
+          hint="Masukkan URL embed Google Maps, bukan URL pencarian biasa"
         >
           <Input
             {...register('maps_url')}
             type="url"
-            placeholder="https://maps.google.com/...?output=embed"
+            placeholder="https://www.google.com/maps/embed?pb=..."
           />
         </FormField>
       </div>

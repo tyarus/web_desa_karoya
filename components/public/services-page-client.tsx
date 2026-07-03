@@ -3,6 +3,7 @@
 import { SectionHeading } from "@/components/public/section-heading";
 import { ServiceCard } from "@/components/public/service-card";
 import { ServiceRequestForm } from "@/components/public/service-request-form";
+import { ServiceHistory } from "@/components/public/service-history";
 import { useRealtimeList } from "@/components/realtime/use-realtime-list";
 import type { Tables } from "@/lib/database.types";
 
@@ -27,8 +28,9 @@ export function ServicesPageClient({
           ))}
         </div>
       </div>
-      <aside className="lg:sticky lg:top-24 lg:self-start">
+      <aside className="space-y-4 lg:sticky lg:top-24 lg:self-start">
         <ServiceRequestForm services={liveServices} />
+        <ServiceHistory />
       </aside>
     </main>
   );

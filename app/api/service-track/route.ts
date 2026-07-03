@@ -8,7 +8,7 @@ export async function GET(request: Request) {
 
   let query = supabase
     .from('service_requests')
-    .select('id, resident_name, service_type, status, created_at')
+    .select('id, resident_name, service_type, status, created_at, notes')
     .order('created_at', { ascending: false });
 
   // Filter by name if provided

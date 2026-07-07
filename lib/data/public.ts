@@ -11,6 +11,18 @@ import {
 import type { Tables } from "@/lib/database.types";
 import { createOptionalClient } from "@/lib/supabase/server";
 
+export async function getUmkm() {
+  const supabase = await createOptionalClient();
+  if (!supabase) return [];
+
+  const { data } = await supabase
+    .from("umkm")
+    .select("*")
+    .order("created_at", { ascending: false });
+
+  return data ?? [];
+}
+
 export async function getVillageSettings() {
   const supabase = await createOptionalClient();
   if (!supabase) return defaultSettings;

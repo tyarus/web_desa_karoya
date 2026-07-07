@@ -75,7 +75,7 @@ export function GovernmentStructure({ government }: GovernmentStructureProps) {
 
   return (
     <div className="space-y-8">
-      {/* Leader Section - KADES & WAKADES */}
+      {/* Leader Section - KADES & SEKDES */}
       {(structure.kades || structure.wakades) && (
         <div className="flex flex-col items-center gap-6 sm:flex-row sm:justify-center">
           {/* KADES */}
@@ -109,7 +109,7 @@ export function GovernmentStructure({ government }: GovernmentStructureProps) {
             <div className="hidden h-px w-12 bg-zinc-300 sm:block" />
           )}
 
-          {/* WAKADES */}
+          {/* SEKDES */}
           {structure.wakades && (
             <div className="flex flex-col items-center text-center">
               <div className="relative">
@@ -125,7 +125,7 @@ export function GovernmentStructure({ government }: GovernmentStructureProps) {
                   )}
                 </div>
                 <div className="absolute -bottom-2 left-1/2 -translate-x-1/2 rounded-full bg-[#40916C] px-3 py-1 text-xs font-bold text-white shadow">
-                  WAKADES
+                  SEKDES
                 </div>
               </div>
               <div className="mt-5">

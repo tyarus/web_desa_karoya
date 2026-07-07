@@ -40,4 +40,7 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 
+# documentation (exclude .md files in docs/)
+/docs/*.md
+
 .vercel

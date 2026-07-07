@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import { createOptionalClient } from "@/lib/supabase/client";
 
@@ -24,44 +24,72 @@ export function useRealtimeList<T extends { id: string }>(
     return result;
   });
 
+  // Keep track of the latest initialData to avoid stale closures
+  const initialDataRef = useRef(initialData);
+  const optionsRef = useRef(options);
+
+  // Update refs when props change
+  useEffect(() => {
+    initialDataRef.current = initialData;
+    optionsRef.current = options;
+  }, [initialData, options]);
+
+  // Sync with initialData when it changes (e.g., after navigation)
+  useEffect(() => {
+    const data = Array.isArray(initialData) ? initialData : [];
+    let result = [...data];
+    if (optionsRef.current?.predicate) {
+      result = result.filter(optionsRef.current.predicate);
+    }
+    if (optionsRef.current?.sort) {
+      result = result.slice().sort(optionsRef.current.sort);
+    }
+    setRows(result);
+  }, [initialData]);
+
   useEffect(() => {
     const supabase = createOptionalClient();
     if (!supabase) return;
 
+    const channelName = `list:${table}:${Math.random().toString(36).slice(2)}`;
     const channel = supabase
-      .channel(`list:${table}:${Math.random().toString(36).slice(2)}`)
+      .channel(channelName)
       .on(
         "postgres_changes",
         { event: "*", schema: "public", table },
-        (payload: { eventType: string; old?: { id: string }; new: T }
-      ) => {
-        setRows((current) => {
-          if (payload.eventType === "DELETE" && payload.old) {
-            return current.filter((row) => row.id !== payload.old!.id);
-          }
+        (payload: { eventType: string; old?: { id: string }; new: T }) => {
+          setRows((current) => {
+            const predicate = optionsRef.current?.predicate;
+            const sort = optionsRef.current?.sort;
 
-          const nextRow = payload.new as T;
-          const exists = current.some((row) => row.id === nextRow.id);
+            if (payload.eventType === "DELETE" && payload.old) {
+              return current.filter((row) => row.id !== payload.old!.id);
+            }
 
-          let nextRows: T[];
-          if (exists) {
-            nextRows = current.map((row) => (row.id === nextRow.id ? nextRow : row));
-          } else {
-            nextRows = [nextRow, ...current];
-          }
+            const nextRow = payload.new as T;
+            const exists = current.some((row) => row.id === nextRow.id);
 
-          // Apply filter
-          if (options?.predicate) {
-            nextRows = nextRows.filter(options.predicate);
-          }
-          // Apply sort
-          if (options?.sort) {
-            nextRows.sort(options.sort);
-          }
+            let nextRows: T[];
+            if (exists) {
+              nextRows = current.map((row) =>
+                row.id === nextRow.id ? nextRow : row
+              );
+            } else {
+              nextRows = [nextRow, ...current];
+            }
 
-          return nextRows;
-        });
-      }
+            // Apply filter
+            if (predicate) {
+              nextRows = nextRows.filter(predicate);
+            }
+            // Apply sort
+            if (sort) {
+              nextRows = nextRows.slice().sort(sort);
+            }
+
+            return nextRows;
+          });
+        }
       )
       .subscribe();
 

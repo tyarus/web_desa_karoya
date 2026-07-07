@@ -5,15 +5,17 @@ import {
   getGallery,
   getServiceRequests,
   getServices,
+  getUmkm,
 } from "@/lib/data/public";
 
 export default async function AdminDashboardPage() {
-  const [posts, services, gallery, requests, messages] = await Promise.all([
+  const [posts, services, gallery, requests, messages, umkm] = await Promise.all([
     getAllPosts(),
     getServices(),
     getGallery(),
     getServiceRequests(),
     getContactMessages(),
+    getUmkm(),
   ]);
 
   return (
@@ -30,6 +32,7 @@ export default async function AdminDashboardPage() {
         gallery={gallery}
         requests={requests}
         messages={messages}
+        umkm={umkm}
       />
     </div>
   );

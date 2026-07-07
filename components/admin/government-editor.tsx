@@ -189,14 +189,14 @@ export function GovernmentEditor({ value, onChange }: GovernmentEditorProps) {
     setIsWakadesUploading(true);
 
     // Upload to server
-    const uploadedUrl = await uploadPhoto(file, 'wakades');
+    const uploadedUrl = await uploadPhoto(file, 'sekdes');
 
     if (uploadedUrl) {
       setWakades(prev => ({ ...prev, photoUrl: uploadedUrl }));
       setWakadesPreview(null); // Clear preview, use the actual uploaded URL
-      toast.success('Foto WAKADES berhasil diupload');
+      toast.success('Foto SEKDES berhasil diupload');
     } else {
-      toast.error('Gagal upload foto WAKADES');
+      toast.error('Gagal upload foto SEKDES');
       setWakadesPreview(null); // Clear failed preview
     }
 
@@ -333,11 +333,11 @@ export function GovernmentEditor({ value, onChange }: GovernmentEditorProps) {
         </div>
       </div>
 
-      {/* WAKADES Section */}
+      {/* SEKDES Section */}
       <div className="rounded-xl border-2 border-[#40916C]/30 bg-[#40916C]/5 p-5">
         <h4 className="mb-4 flex items-center gap-2 font-heading text-lg font-bold text-[#40916C]">
-          <div className="flex h-8 w-8 items-center justify-center rounded-full bg-[#40916C] text-sm font-bold text-white">W</div>
-          Wakil Kepala Desa (WAKADES)
+          <div className="flex h-8 w-8 items-center justify-center rounded-full bg-[#40916C] text-sm font-bold text-white">S</div>
+          Sekretaris Desa (SEKDES)
         </h4>
         <div className="flex flex-col gap-6 sm:flex-row">
           <div className="flex flex-col items-center gap-3">
@@ -345,7 +345,7 @@ export function GovernmentEditor({ value, onChange }: GovernmentEditorProps) {
               {wakadesPreview || wakades.photoUrl ? (
                 <img
                   src={wakadesPreview || wakades.photoUrl}
-                  alt="WAKADES"
+                  alt="SEKDES"
                   className="h-full w-full object-cover"
                 />
               ) : (
@@ -362,7 +362,7 @@ export function GovernmentEditor({ value, onChange }: GovernmentEditorProps) {
               accept="image/*"
               onChange={handleWakadesFileChange}
               className="hidden"
-              aria-label="Upload foto WAKADES"
+              aria-label="Upload foto SEKDES"
             />
             <Button
               type="button"
@@ -384,7 +384,7 @@ export function GovernmentEditor({ value, onChange }: GovernmentEditorProps) {
                     setWakades({ ...wakades, name: e.target.value });
                     setTimeout(updateValue, 0);
                   }}
-                  placeholder="Nama WAKADES"
+                  placeholder="Nama SEKDES"
                 />
               </FormField>
               <FormField label="Jabatan">

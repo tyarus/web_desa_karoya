@@ -22,7 +22,7 @@ export function ServicesPageClient({
           title="Pilih layanan administrasi"
           description="Baca persyaratan, lalu kirim pengajuan agar petugas desa dapat menyiapkan tindak lanjut."
         />
-        <div className="mt-8 grid gap-5 md:grid-cols-2">
+        <div className="mt-8 grid gap-5 md:grid-cols-2 items-start">
           {liveServices.map((service) => (
             <ServiceCard key={service.id} service={service} />
           ))}

@@ -4,9 +4,9 @@
 /* eslint-disable react-hooks/incompatible-library */
 
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Save, Upload } from "lucide-react";
+import { Plus, Save, Trash2 } from "lucide-react";
 import { useRef, useTransition } from "react";
-import { useForm } from "react-hook-form";
+import { useFieldArray, useForm } from "react-hook-form";
 import { toast } from "sonner";
 
 import { saveHomeContent } from "@/app/admin/actions/home";
@@ -17,10 +17,15 @@ import { FormField } from "@/components/ui/form-field";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { useRealtimeRecord } from "@/components/realtime/use-realtime-record";
-import { defaultFeaturedServices, defaultStats } from "@/lib/content/default-data";
+import { defaultStats } from "@/lib/content/default-data";
 import type { Tables } from "@/lib/database.types";
 import { parseJsonOr, stringifyJson } from "@/lib/json-utils";
 import { homeSchema, type HomeInput } from "@/lib/validations";
+
+interface StatItem {
+  label: string;
+  value: string;
+}
 
 export function HomeEditor({
   home,
@@ -33,7 +38,13 @@ export function HomeEditor({
   const fileRef = useRef<HTMLInputElement | null>(null);
   const liveHome = useRealtimeRecord("home_sections", home);
   const liveSettings = useRealtimeRecord("village_settings", settings);
-  const form = useForm<HomeInput>({
+
+  // Initialize stats from home data
+  const initialStats: StatItem[] = home.stats && home.stats.length > 0
+    ? home.stats.map(s => ({ label: s.label, value: s.value }))
+    : defaultStats.map(s => ({ label: s.label, value: s.value }));
+
+  const form = useForm<HomeInput & { stats_array: StatItem[] }>({
     resolver: zodResolver(homeSchema),
     defaultValues: {
       hero_title: home.hero_title,
@@ -42,12 +53,15 @@ export function HomeEditor({
       hero_cta_label: home.hero_cta_label ?? "Lihat Layanan",
       hero_cta_href: home.hero_cta_href ?? "/layanan",
       stats_json: stringifyJson(home.stats, defaultStats),
-      featured_services_json: stringifyJson(
-        home.featured_services,
-        defaultFeaturedServices,
-      ),
+      stats_array: initialStats,
     },
   });
+
+  const { fields, append, remove } = useFieldArray({
+    control: form.control,
+    name: "stats_array",
+  });
+
   const values = form.watch();
   const previewHome: Tables<"home_sections"> = {
     ...liveHome,
@@ -56,14 +70,15 @@ export function HomeEditor({
     hero_image_url: values.hero_image_url || liveHome.hero_image_url,
     hero_cta_label: values.hero_cta_label || liveHome.hero_cta_label,
     hero_cta_href: values.hero_cta_href || liveHome.hero_cta_href,
-    stats: parseJsonOr(values.stats_json, liveHome.stats),
-    featured_services: parseJsonOr(
-      values.featured_services_json,
-      liveHome.featured_services,
-    ),
+    stats: values.stats_array.map((s, i) => ({
+      ...s,
+      helper: home.stats?.[i]?.helper ?? "",
+    })) || liveHome.stats,
+    featured_services: liveHome.featured_services,
   };
 
-  function onSubmit(input: HomeInput) {
+  // Sync stats_array changes to stats_json for submission
+  function onSubmit(input: HomeInput & { stats_array: StatItem[] }) {
     startTransition(async () => {
       const formData = new FormData();
       formData.set("hero_title", input.hero_title);
@@ -71,8 +86,8 @@ export function HomeEditor({
       formData.set("hero_image_url", input.hero_image_url ?? "");
       formData.set("hero_cta_label", input.hero_cta_label ?? "");
       formData.set("hero_cta_href", input.hero_cta_href);
-      formData.set("stats_json", input.stats_json);
-      formData.set("featured_services_json", input.featured_services_json);
+      // Convert stats_array back to JSON for storage
+      formData.set("stats_json", JSON.stringify(input.stats_array));
 
       if (fileRef.current?.files?.[0]) {
         formData.set("hero_image", fileRef.current.files[0]);
@@ -133,24 +148,75 @@ export function HomeEditor({
               <Input {...form.register("hero_cta_href")} />
             </FormField>
           </div>
-          <FormField
-            label="Statistik"
-            helper="Format JSON array: label, value, helper."
-            error={form.formState.errors.stats_json?.message}
-          >
-            <Textarea rows={9} className="font-mono" {...form.register("stats_json")} />
-          </FormField>
-          <FormField
-            label="Layanan unggulan"
-            helper="Format JSON array: title, description, href."
-            error={form.formState.errors.featured_services_json?.message}
-          >
-            <Textarea
-              rows={9}
-              className="font-mono"
-              {...form.register("featured_services_json")}
-            />
-          </FormField>
+
+          {/* Statistik Section - Column-based Input */}
+          <div className="space-y-3">
+            <div className="flex items-center justify-between">
+              <FormField label="Statistik" error={form.formState.errors.stats_json?.message} />
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => append({ label: "", value: "" })}
+                className="h-8 gap-1 text-xs"
+              >
+                <Plus className="size-3" />
+                Tambah
+              </Button>
+            </div>
+
+            {/* Hidden textarea for validation */}
+            <Input type="hidden" {...form.register("stats_json")} />
+
+            {/* Stats Table Header */}
+            <div className="grid grid-cols-[1fr_120px_40px] gap-2 px-1">
+              <p className="text-xs font-semibold text-zinc-500">Label</p>
+              <p className="text-xs font-semibold text-zinc-500">Nilai</p>
+              <span></span>
+            </div>
+
+            {/* Stats Rows */}
+            <div className="space-y-2">
+              {fields.map((field, index) => (
+                <div
+                  key={field.id}
+                  className="grid grid-cols-[1fr_120px_40px] gap-2 items-start"
+                >
+                  <Input
+                    {...form.register(`stats_array.${index}.label`)}
+                    placeholder="Contoh: Jumlah RT"
+                    className="h-9 text-sm"
+                  />
+                  <Input
+                    {...form.register(`stats_array.${index}.value`)}
+                    placeholder="20"
+                    className="h-9 text-sm"
+                  />
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => {
+                      if (fields.length > 1) {
+                        remove(index);
+                      } else {
+                        toast.warning("Minimal harus ada 1 statistik");
+                      }
+                    }}
+                    className="h-9 w-10 shrink-0 text-zinc-400 hover:text-red-500"
+                  >
+                    <Trash2 className="size-4" />
+                  </Button>
+                </div>
+              ))}
+            </div>
+
+            {fields.length === 0 && (
+              <p className="text-sm text-zinc-500 text-center py-2">
+                Tidak ada statistik. Klik "Tambah" untuk menambahkan.
+              </p>
+            )}
+          </div>
         </div>
         <Button type="submit" disabled={pending} className="mt-6">
           <Save className="size-4" />

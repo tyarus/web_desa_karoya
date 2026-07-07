@@ -10,10 +10,8 @@ import type { Tables } from "@/lib/database.types";
 
 export function ContactPageClient({
   settings,
-  messages = [],
 }: {
   settings: Tables<"village_settings">;
-  messages?: Tables<"contact_messages">[];
 }) {
   const liveSettings = useRealtimeRecord("village_settings", settings);
 
@@ -58,7 +56,7 @@ export function ContactPageClient({
           ) : null}
         </div>
 
-        <ContactHistory messages={messages} />
+        <ContactHistory />
       </div>
       <ContactForm />
     </main>

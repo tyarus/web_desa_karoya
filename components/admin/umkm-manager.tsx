@@ -286,7 +286,7 @@ export function UMKMManager({ initialUMKMs, initialProducts }: UMKMManagerProps)
   // Data table columns
   const columns = useMemo<ColumnDef<Tables<'umkm'>>[]>(
     () => [
-      {
+      { 
         header: 'UMKM',
         cell: ({ row }) => (
           <div>

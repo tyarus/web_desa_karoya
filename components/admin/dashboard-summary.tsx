@@ -4,7 +4,8 @@ import {
   Inbox,
   Mail,
   Newspaper,
-  Settings,
+  Package,
+  ShoppingBag,
 } from "lucide-react";
 
 import type { Tables } from "@/lib/database.types";
@@ -15,24 +16,29 @@ export function DashboardSummary({
   gallery,
   requests,
   messages,
+  umkm,
 }: {
   posts: Tables<"posts">[];
   services: Tables<"services">[];
   gallery: Tables<"gallery">[];
   requests: Tables<"service_requests">[];
   messages: Tables<"contact_messages">[];
+  umkm: Tables<"umkm">[];
 }) {
+  const pendingRequests = requests.filter((r) => r.status === "masuk").length;
+  const pendingMessages = messages.filter((m) => m.status === "baru").length;
+  const publishedPosts = posts.filter((p) => p.status === "published").length;
+  const activeUmkm = umkm.filter((u) => u.status === "active").length;
+
   const cards = [
-    { label: "Artikel", value: posts.length, icon: Newspaper },
+    { label: "Artikel Terbit", value: publishedPosts, icon: Newspaper },
     { label: "Layanan", value: services.length, icon: FileText },
     { label: "Foto", value: gallery.length, icon: Camera },
-    { label: "Pengajuan", value: requests.length, icon: Inbox },
-    { label: "Pesan", value: messages.length, icon: Mail },
-    {
-      label: "Draft",
-      value: posts.filter((post) => post.status === "draft").length,
-      icon: Settings,
-    },
+    { label: "Pengajuan Masuk", value: pendingRequests, icon: Inbox },
+    { label: "Pesan Baru", value: pendingMessages, icon: Mail },
+    { label: "UMKM Aktif", value: activeUmkm, icon: ShoppingBag },
+    { label: "Total UMKM", value: umkm.length, icon: Package },
+    { label: "Total Pesan", value: messages.length, icon: Mail },
   ];
 
   return (

@@ -11,7 +11,7 @@ import { toast } from 'sonner';
 import type { ColumnDef } from '@tanstack/react-table';
 import { Edit3, ChevronLeft, ChevronRight, X, Save } from 'lucide-react';
 
-import { deleteUMKM, saveUMKM, saveUMKMProduct, toggleUMKMStatus } from '@/app/admin/actions/umkm';
+import { deleteUMKM, deleteUMKMProduct, saveUMKM, saveUMKMProduct, toggleUMKMStatus } from '@/app/admin/actions/umkm';
 import { uploadProductImage } from '@/lib/supabase/storage-client';
 import { ConfirmDeleteDialog } from '@/components/admin/confirm-delete-dialog';
 import { DataTable } from '@/components/admin/data-table';
@@ -313,7 +313,13 @@ export function UMKMManager({ initialUMKMs, initialProducts }: UMKMManagerProps)
         if (removedProductIds.length > 0) {
           console.log('Removing deleted products:', removedProductIds);
           for (const id of removedProductIds) {
-            await deleteUMKMProduct(id);
+            const deletedProduct = liveProducts.find(p => p.id === id);
+            const result = await deleteUMKMProduct(id);
+            if (result.ok) {
+              toast.success(`Produk "${deletedProduct?.name || 'Unknown'}" berhasil dihapus`);
+            } else {
+              toast.error(`Gagal menghapus produk "${deletedProduct?.name || 'Unknown'}"`);
+            }
           }
         }
 

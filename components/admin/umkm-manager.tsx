@@ -12,6 +12,7 @@ import type { ColumnDef } from '@tanstack/react-table';
 import { Edit3, ChevronLeft, ChevronRight, X, Save } from 'lucide-react';
 
 import { deleteUMKM, saveUMKM, saveUMKMProduct, toggleUMKMStatus } from '@/app/admin/actions/umkm';
+import { uploadProductImage } from '@/lib/supabase/storage-client';
 import { ConfirmDeleteDialog } from '@/components/admin/confirm-delete-dialog';
 import { DataTable } from '@/components/admin/data-table';
 import { UMKMStepper, UMKMStepperProgress, Step } from '@/components/admin/umkm-stepper';
@@ -86,6 +87,7 @@ export function UMKMManager({ initialUMKMs, initialProducts }: UMKMManagerProps)
   const [editingId, setEditingId] = useState<string | null>(null);
   const [products, setProducts] = useState<Product[]>([]);
   const [coverFile, setCoverFile] = useState<File | null>(null);
+  const [isLoadingEdit, setIsLoadingEdit] = useState(false);
   const fileRef = useRef<HTMLInputElement | null>(null);
 
   const liveUMKMs = useRealtimeList('umkm', initialUMKMs, {
@@ -164,14 +166,29 @@ export function UMKMManager({ initialUMKMs, initialProducts }: UMKMManagerProps)
 
   // Load existing UMKM for editing
   function loadForEdit(umkm: Tables<'umkm'>) {
+    // Prevent double-click
+    if (isLoadingEdit) return;
+    setIsLoadingEdit(true);
+
     setEditingId(umkm.id);
-    const umkmProducts = liveProducts.filter(p => p.umkm_id === umkm.id);
+
+    // First clear products to avoid duplicates
+    setProducts([]);
+
+    // Get products for this UMKM, removing duplicates by id
+    const umkmProducts = liveProducts
+      .filter(p => p.umkm_id === umkm.id)
+      .filter((p, index, self) =>
+        index === self.findIndex(t => t.id === p.id)
+      );
+
     setProducts(umkmProducts.map(p => ({
       id: p.id,
       name: p.name || '',
       description: p.description,
       price: p.price || '',
       image_url: p.image_url || '',
+      image_file: undefined, // No local file when loading from database
     })));
 
     reset({
@@ -189,6 +206,7 @@ export function UMKMManager({ initialUMKMs, initialProducts }: UMKMManagerProps)
       status: (umkm.status as 'draft' | 'published' | 'active') || 'draft',
     });
     setCurrentStep(1);
+    setIsLoadingEdit(false);
   }
 
   // Reset form
@@ -196,6 +214,7 @@ export function UMKMManager({ initialUMKMs, initialProducts }: UMKMManagerProps)
     setEditingId(null);
     setProducts([]);
     setCoverFile(null);
+    setIsLoadingEdit(false);
     reset(defaultFormData);
     setCurrentStep(1);
   }
@@ -243,12 +262,30 @@ export function UMKMManager({ initialUMKMs, initialProducts }: UMKMManagerProps)
         if (products.length > 0) {
           for (const product of products) {
             console.log('Saving product:', product.name);
+
+            // Upload image file if exists (local file, not URL)
+            let finalImageUrl = product.image_url;
+            if (product.image_file) {
+              console.log('Uploading product image...');
+              const uploadedUrl = await uploadProductImage(product.image_file);
+              if (uploadedUrl) {
+                finalImageUrl = uploadedUrl;
+                console.log('Image uploaded:', finalImageUrl);
+              }
+            }
+
+            // Skip blob URLs - they are temporary and shouldn't be saved
+            if (finalImageUrl?.startsWith('blob:')) {
+              console.log('Skipping blob URL for product image');
+              finalImageUrl = '';
+            }
+
             const productFormData = new FormData();
             productFormData.set('umkm_id', umkmId);
             productFormData.set('product_name', product.name);
             productFormData.set('description', product.description);
             productFormData.set('price', product.price || '');
-            productFormData.set('image_url', product.image_url || '');
+            productFormData.set('image_url', finalImageUrl || '');
             const productResult = await saveUMKMProduct(productFormData);
             console.log('Product save result:', productResult);
             if (!productResult.ok) {
@@ -339,7 +376,12 @@ export function UMKMManager({ initialUMKMs, initialProducts }: UMKMManagerProps)
         header: 'Aksi',
         cell: ({ row }) => (
           <div className="flex justify-end gap-2">
-            <Button size="sm" variant="outline" onClick={() => loadForEdit(row.original)}>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => loadForEdit(row.original)}
+              disabled={isLoadingEdit || editingId === row.original.id}
+            >
               <Edit3 className="size-4" />
             </Button>
             <ConfirmDeleteDialog

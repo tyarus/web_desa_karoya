@@ -4,7 +4,7 @@
 /* eslint-disable @next/next/no-img-element */
 
 import { useState, useRef } from 'react';
-import { Plus, Trash2 } from 'lucide-react';
+import { Plus, Trash2, Upload, X } from 'lucide-react';
 import { FormField } from '@/components/ui/form-field';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -16,6 +16,7 @@ export interface Product {
   description: string;
   price: string;
   image_url: string;
+  image_file?: File | null;
 }
 
 export interface ProductsFormData {
@@ -33,12 +34,35 @@ export function UMKMStepProducts({
   onProductsChange,
   maxImages = 8
 }: UMKMStepProductsProps) {
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const [newProduct, setNewProduct] = useState<Omit<Product, 'id'>>({
     name: '',
     description: '',
     price: '',
     image_url: '',
+    image_file: null,
   });
+
+  function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (file) {
+      // Create local preview URL using blob URL
+      const localUrl = URL.createObjectURL(file);
+      setNewProduct({ ...newProduct, image_url: localUrl, image_file: file });
+    }
+    // Reset input so same file can be selected again
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  }
+
+  function clearImage() {
+    // Revoke the blob URL to free memory
+    if (newProduct.image_url && newProduct.image_url.startsWith('blob:')) {
+      URL.revokeObjectURL(newProduct.image_url);
+    }
+    setNewProduct({ ...newProduct, image_url: '', image_file: null });
+  }
 
   function addProduct() {
     if (!newProduct.name.trim() || !newProduct.description.trim()) return;
@@ -47,10 +71,18 @@ export function UMKMStepProducts({
       ...products,
       { ...newProduct, id: crypto.randomUUID() }
     ]);
-    setNewProduct({ name: '', description: '', price: '', image_url: '' });
+    // Clear the new product state
+    if (newProduct.image_url && newProduct.image_url.startsWith('blob:')) {
+      URL.revokeObjectURL(newProduct.image_url);
+    }
+    setNewProduct({ name: '', description: '', price: '', image_url: '', image_file: null });
   }
 
   function removeProduct(id: string) {
+    const productToRemove = products.find(p => p.id === id);
+    if (productToRemove?.image_url?.startsWith('blob:')) {
+      URL.revokeObjectURL(productToRemove.image_url);
+    }
     onProductsChange(products.filter(p => p.id !== id));
   }
 
@@ -116,14 +148,61 @@ export function UMKMStepProducts({
           </FormField>
 
           <FormField
-            label="URL Gambar Produk (Opsional)"
+            label="Gambar Produk (Opsional)"
             hint={!canAddMoreImages ? `Batas maksimal ${maxImages} gambar tercapai` : undefined}
           >
+            {/* Preview Gambar */}
+            {newProduct.image_url && (
+              <div className="relative mb-3 overflow-hidden rounded-lg border border-zinc-200">
+                <img
+                  src={newProduct.image_url}
+                  alt="Preview"
+                  className="h-32 w-full object-cover"
+                />
+                <button
+                  type="button"
+                  onClick={clearImage}
+                  aria-label="Hapus gambar"
+                  className="absolute right-2 top-2 rounded-full bg-black/50 p-1 text-white hover:bg-black/70"
+                >
+                  <X className="size-4" />
+                </button>
+              </div>
+            )}
+
+            {/* Upload File */}
+            <div className="mb-3">
+              <label className="block w-full cursor-pointer rounded-lg border border-dashed border-zinc-300 bg-zinc-50 px-4 py-3 text-center text-sm text-zinc-600 transition-colors hover:border-[#1B4332] hover:bg-[#E9F5EE] hover:text-[#1B4332]">
+                <span className="sr-only">Pilih file gambar</span>
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/*"
+                  onChange={handleFileChange}
+                  className="hidden"
+                  disabled={!canAddMoreImages && !newProduct.image_url}
+                />
+                <Upload className="mx-auto mb-1 size-5" />
+                Klik untuk pilih file dari komputer
+              </label>
+            </div>
+
+            {/* OR Divider */}
+            <div className="relative mb-3">
+              <div className="absolute inset-0 flex items-center">
+                <div className="w-full border-t border-zinc-200" />
+              </div>
+              <div className="relative flex justify-center text-xs uppercase">
+                <span className="bg-zinc-50 px-2 text-zinc-500">atau</span>
+              </div>
+            </div>
+
+            {/* URL Input */}
             <Input
               type="url"
-              value={newProduct.image_url}
-              onChange={(e) => setNewProduct({ ...newProduct, image_url: e.target.value })}
-              placeholder="https://example.com/gambar.jpg"
+              value={newProduct.image_file || newProduct.image_url.startsWith('blob:') || newProduct.image_url.startsWith('data:') ? '' : newProduct.image_url}
+              onChange={(e) => setNewProduct({ ...newProduct, image_url: e.target.value, image_file: null })}
+              placeholder="Paste URL gambar (https://...)"
               disabled={!canAddMoreImages && !newProduct.image_url}
               onKeyDown={(e) => {
                 if (e.key === 'Enter') {
@@ -132,7 +211,7 @@ export function UMKMStepProducts({
               }}
             />
             <p className="mt-1 text-xs text-zinc-500">
-              Paste URL gambar produk (maks {maxImages} gambar)
+              {newProduct.image_file ? `File dipilih: ${newProduct.image_file.name}` : 'Pilih file dari komputer atau paste URL gambar (maks ' + maxImages + ' gambar)'}
             </p>
           </FormField>
 

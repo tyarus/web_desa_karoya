@@ -17,6 +17,7 @@ export interface Product {
   price: string;
   image_url: string;
   image_file?: File | null;
+  isNew?: boolean;
 }
 
 export interface ProductsFormData {
@@ -69,7 +70,7 @@ export function UMKMStepProducts({
 
     onProductsChange([
       ...products,
-      { ...newProduct, id: crypto.randomUUID() }
+      { ...newProduct, id: crypto.randomUUID(), isNew: true }
     ]);
     // Clear the new product state
     if (newProduct.image_url && newProduct.image_url.startsWith('blob:')) {

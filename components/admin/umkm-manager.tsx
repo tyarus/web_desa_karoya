@@ -189,6 +189,7 @@ export function UMKMManager({ initialUMKMs, initialProducts }: UMKMManagerProps)
       price: p.price || '',
       image_url: p.image_url || '',
       image_file: undefined, // No local file when loading from database
+      isNew: false, // Products from database are not new
     })));
 
     reset({
@@ -286,11 +287,33 @@ export function UMKMManager({ initialUMKMs, initialProducts }: UMKMManagerProps)
             productFormData.set('description', product.description);
             productFormData.set('price', product.price || '');
             productFormData.set('image_url', finalImageUrl || '');
+
+            // Use isNew flag to determine INSERT vs UPDATE
+            // Products loaded from DB have isNew: false, newly added have isNew: true
+            if (!product.isNew) {
+              productFormData.set('id', product.id);
+            }
+            // If isNew is true, don't pass ID to trigger INSERT
+
             const productResult = await saveUMKMProduct(productFormData);
             console.log('Product save result:', productResult);
             if (!productResult.ok) {
               console.error('Failed to save product:', productResult.message);
             }
+          }
+        }
+
+        // Delete products that were removed in the UI but still exist in database
+        const existingProductIds = liveProducts
+          .filter(p => p.umkm_id === umkmId)
+          .map(p => p.id);
+        const currentProductIds = products.map(p => p.id);
+
+        const removedProductIds = existingProductIds.filter(id => !currentProductIds.includes(id));
+        if (removedProductIds.length > 0) {
+          console.log('Removing deleted products:', removedProductIds);
+          for (const id of removedProductIds) {
+            await deleteUMKMProduct(id);
           }
         }
 

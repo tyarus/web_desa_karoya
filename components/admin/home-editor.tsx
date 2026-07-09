@@ -116,7 +116,12 @@ export function HomeEditor({
     });
   }, (errors) => {
     console.log('=== Form validation failed ===');
-    console.log('Validation errors:', errors);
+    console.log('Validation errors:', JSON.stringify(errors, null, 2));
+    // Show errors as toast
+    const errorMessages = Object.values(errors).map((e: any) => e?.message).filter(Boolean);
+    if (errorMessages.length > 0) {
+      toast.error(errorMessages[0]);
+    }
   });
 
   return (

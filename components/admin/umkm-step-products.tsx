@@ -201,7 +201,7 @@ export function UMKMStepProducts({
             {/* URL Input */}
             <Input
               type="url"
-              value={newProduct.image_file || newProduct.image_url.startsWith('blob:') || newProduct.image_url.startsWith('data:') ? '' : newProduct.image_url}
+              value={newProduct.image_url.startsWith('blob:') || newProduct.image_url.startsWith('data:') ? '' : newProduct.image_url}
               onChange={(e) => setNewProduct({ ...newProduct, image_url: e.target.value, image_file: null })}
               placeholder="Paste URL gambar (https://...)"
               disabled={!canAddMoreImages && !newProduct.image_url}

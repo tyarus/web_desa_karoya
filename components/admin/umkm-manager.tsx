@@ -288,6 +288,12 @@ export function UMKMManager({ initialUMKMs, initialProducts }: UMKMManagerProps)
             productFormData.set('price', product.price || '');
             productFormData.set('image_url', finalImageUrl || '');
 
+            // If there's a local file, also send it directly for upload
+            // This ensures the server can handle file uploads properly
+            if (product.image_file) {
+              productFormData.set('image', product.image_file);
+            }
+
             // Use isNew flag to determine INSERT vs UPDATE
             // Products loaded from DB have isNew: false, newly added have isNew: true
             if (!product.isNew) {

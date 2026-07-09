@@ -215,17 +215,28 @@ export async function saveUMKMProduct(input: FormData | UMKMProductInput) {
 
     console.log('Product FormData:', { umkm_id, name, description, price, id });
 
+    // First check for image file upload (from client-side upload)
     const file = formFile(input.get('image'));
 
     if (file) {
+      console.log('Uploading product image file...');
       const uploadedUrl = await uploadPublicImage(
         supabase,
         file,
         'umkm/products'
       );
       imageUrl = uploadedUrl ?? undefined;
+      console.log('Image uploaded, URL:', imageUrl);
     } else {
+      // Fallback to image_url field (might be a Supabase URL from client-side upload)
       imageUrl = formString(input.get('image_url')) || undefined;
+      console.log('Using image_url field:', imageUrl);
+
+      // If the image_url is a blob URL (shouldn't happen here, but safety check)
+      if (imageUrl?.startsWith('blob:')) {
+        console.log('Warning: blob URL detected in FormData, clearing');
+        imageUrl = undefined;
+      }
     }
   } else {
     umkm_id = input.umkm_id;
@@ -252,6 +263,8 @@ export async function saveUMKMProduct(input: FormData | UMKMProductInput) {
       price,
       image_url: imageUrl,
     };
+
+    console.log('Inserting product:', insertData);
 
     if (id) {
       const { data, error } = await supabase

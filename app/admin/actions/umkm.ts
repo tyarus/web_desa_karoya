@@ -145,7 +145,11 @@ export async function saveUMKM(input: FormData | UMKMInput) {
       ...(coverUrl && { cover_url: coverUrl }),
     };
 
+    console.log('Saving payload:', JSON.stringify(payload, null, 2));
+    console.log('ID for update/insert:', id || 'NEW (no ID)');
+
     if (id) {
+      console.log('Executing UPDATE for ID:', id);
       const { data, error } = await supabase
         .from('umkm')
         .update(payload)
@@ -153,25 +157,52 @@ export async function saveUMKM(input: FormData | UMKMInput) {
         .select()
         .single();
 
-      if (error) throw error;
+      console.log('Update result:', { data, error });
+
+      if (error) {
+        console.error('Update error:', error);
+        throw error;
+      }
+
+      // Revalidate all possible paths
+      revalidatePath('/umkm', 'layout');
       revalidatePath('/umkm');
+      revalidatePath('/admin/umkm', 'layout');
       revalidatePath('/admin/umkm');
-      revalidatePath(`/umkm/${slug}`);
+      revalidatePath(`/umkm/${slug}`, 'layout');
+      revalidatePath(`/umkm/${data?.slug}`, 'layout');
+
+      console.log('Returning updated data:', data);
       return {
         ok: true,
         message: coverUploadFailed ? 'UMKM berhasil diperbarui (gambar cover tidak terupload)' : 'UMKM berhasil diperbarui',
         data,
       };
     } else {
+      console.log('Executing INSERT');
       const { data, error } = await supabase
         .from('umkm')
         .insert(payload)
         .select()
         .single();
 
-      if (error) throw error;
+      console.log('Insert result:', { data, error });
+
+      if (error) {
+        console.error('Insert error:', error);
+        throw error;
+      }
+
+      // Revalidate all possible paths
+      revalidatePath('/umkm', 'layout');
       revalidatePath('/umkm');
+      revalidatePath('/admin/umkm', 'layout');
       revalidatePath('/admin/umkm');
+      if (data?.slug) {
+        revalidatePath(`/umkm/${data.slug}`, 'layout');
+      }
+
+      console.log('Returning inserted data:', data);
       return {
         ok: true,
         message: coverUploadFailed ? 'UMKM berhasil ditambahkan (gambar cover tidak terupload)' : 'UMKM berhasil ditambahkan',

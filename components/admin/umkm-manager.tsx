@@ -8,6 +8,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { toast } from 'sonner';
+import { useRouter } from 'next/navigation';
 import type { ColumnDef } from '@tanstack/react-table';
 import { Edit3, ChevronLeft, ChevronRight, X, Save } from 'lucide-react';
 
@@ -81,6 +82,7 @@ const defaultFormData: UmkmFormData = {
 };
 
 export function UMKMManager({ initialUMKMs, initialProducts }: UMKMManagerProps) {
+  const router = useRouter();
   const [pending, startTransition] = useTransition();
   const [currentStep, setCurrentStep] = useState(1);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -309,8 +311,8 @@ export function UMKMManager({ initialUMKMs, initialProducts }: UMKMManagerProps)
           console.log('Removing deleted products:', removedProductIds);
           for (const id of removedProductIds) {
             const deletedProduct = liveProducts.find(p => p.id === id);
-            const result = await deleteUMKMProduct(id);
-            if (result.ok) {
+            const deleteResult = await deleteUMKMProduct(id);
+            if (deleteResult.ok) {
               toast.success(`Produk "${deletedProduct?.name || 'Unknown'}" berhasil dihapus`);
             } else {
               toast.error(`Gagal menghapus produk "${deletedProduct?.name || 'Unknown'}"`);
@@ -320,6 +322,9 @@ export function UMKMManager({ initialUMKMs, initialProducts }: UMKMManagerProps)
 
         toast.success(result.message);
         resetForm();
+
+        // Force refresh from server to get latest data
+        router.refresh();
       } else {
         toast.error(result.message || 'Gagal menyimpan');
       }

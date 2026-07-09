@@ -88,6 +88,8 @@ export function HomeEditor({
       formData.set("hero_cta_href", input.hero_cta_href);
       // Convert stats_array back to JSON for storage
       formData.set("stats_json", JSON.stringify(input.stats_array));
+      // Set empty featured services (can be expanded later)
+      formData.set("featured_services_json", JSON.stringify([]));
 
       if (fileRef.current?.files?.[0]) {
         formData.set("hero_image", fileRef.current.files[0]);

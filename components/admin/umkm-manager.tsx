@@ -225,37 +225,57 @@ export function UMKMManager({ initialUMKMs, initialProducts }: UMKMManagerProps)
   async function onSubmit(data: UmkmFormData) {
     console.log('=== onSubmit called ===');
     console.log('Form data:', JSON.stringify(data, null, 2));
+    console.log('editingId:', editingId);
+    console.log('coverFile:', coverFile);
 
     startTransition(async () => {
-      const formDataObj = new FormData();
-      formDataObj.set('id', editingId || '');
-      formDataObj.set('name', data.name || '');
-      formDataObj.set('description', data.description || '');
-      formDataObj.set('owner_name', data.owner_name || '');
-      // Use file if selected, otherwise use URL
-      if (coverFile) {
-        formDataObj.set('cover_url', '');
-      } else {
-        formDataObj.set('cover_url', data.cover_url || '');
-      }
-      formDataObj.set('template_id', data.template_id || 'A');
-      formDataObj.set('accent_color', data.accent_color || '#1B4332');
-      formDataObj.set('whatsapp', data.whatsapp || '');
-      formDataObj.set('instagram', data.instagram || '');
-      formDataObj.set('facebook', data.facebook || '');
-      formDataObj.set('address', data.address || '');
-      formDataObj.set('maps_url', data.maps_url || '');
-      formDataObj.set('status', data.status || 'draft');
+      try {
+        const formDataObj = new FormData();
+        formDataObj.set('id', editingId || '');
+        formDataObj.set('name', data.name || '');
+        formDataObj.set('description', data.description || '');
+        formDataObj.set('owner_name', data.owner_name || '');
+        // Use file if selected, otherwise use URL
+        if (coverFile) {
+          formDataObj.set('cover_url', '');
+        } else {
+          formDataObj.set('cover_url', data.cover_url || '');
+        }
+        formDataObj.set('template_id', data.template_id || 'A');
+        formDataObj.set('accent_color', data.accent_color || '#1B4332');
+        formDataObj.set('whatsapp', data.whatsapp || '');
+        formDataObj.set('instagram', data.instagram || '');
+        formDataObj.set('facebook', data.facebook || '');
+        formDataObj.set('address', data.address || '');
+        formDataObj.set('maps_url', data.maps_url || '');
+        formDataObj.set('status', data.status || 'draft');
 
-      // Add file if selected
-      if (coverFile) {
-        formDataObj.set('cover', coverFile);
-      }
+        // Add file if selected
+        if (coverFile) {
+          formDataObj.set('cover', coverFile);
+        }
 
-      console.log('Sending to server...');
-      const result = await saveUMKM(formDataObj);
-      console.log('Server result:', result);
-      if (result.ok && result.data) {
+        console.log('Sending to server...');
+        console.log('FormData entries:');
+        for (const [key, value] of formDataObj.entries()) {
+          console.log(`  ${key}:`, value instanceof File ? `File(${value.name}, ${value.size})` : value);
+        }
+
+        const result = await saveUMKM(formDataObj);
+        console.log('Server result:', JSON.stringify(result, null, 2));
+
+        if (!result.ok) {
+          console.error('Save failed:', result.message);
+          toast.error(result.message || 'Gagal menyimpan');
+          return;
+        }
+
+        if (!result.data) {
+          console.error('Save failed: no data returned');
+          toast.error('Gagal menyimpan: tidak ada data dikembalikan');
+          return;
+        }
+
         // Save products
         const umkmId = result.data.id;
         console.log('UMKM saved with ID:', umkmId);
@@ -325,8 +345,9 @@ export function UMKMManager({ initialUMKMs, initialProducts }: UMKMManagerProps)
 
         // Force refresh from server to get latest data
         router.refresh();
-      } else {
-        toast.error(result.message || 'Gagal menyimpan');
+      } catch (error) {
+        console.error('Submit error:', error);
+        toast.error('Terjadi kesalahan saat menyimpan. Silakan coba lagi.');
       }
     });
   }
@@ -334,11 +355,15 @@ export function UMKMManager({ initialUMKMs, initialProducts }: UMKMManagerProps)
   // Handle form submission with manual validation
   async function handleFormSubmit(e: React.FormEvent) {
     e.preventDefault();
+    console.log('=== Form submit triggered ===');
 
     // Validate all required fields
+    console.log('Validating form...');
     const isValid = await trigger(['name', 'description', 'owner_name']);
+    console.log('Validation result:', isValid);
 
     if (!isValid) {
+      console.log('Validation failed, showing error');
       toast.error('Mohon lengkapi field yang wajib diisi');
       setCurrentStep(1); // Go back to first step to show errors
       return;
@@ -346,6 +371,8 @@ export function UMKMManager({ initialUMKMs, initialProducts }: UMKMManagerProps)
 
     // Get current form values and submit
     const currentData = form.getValues();
+    console.log('Current form data:', currentData);
+    console.log('Calling onSubmit...');
     onSubmit(currentData);
   }
 

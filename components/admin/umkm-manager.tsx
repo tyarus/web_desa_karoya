@@ -603,6 +603,14 @@ export function UMKMManager({ initialUMKMs, initialProducts }: UMKMManagerProps)
             <h3 className="font-heading text-lg font-bold text-[#1B4332]">
               Daftar UMKM ({liveUMKMs.length})
             </h3>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => router.refresh()}
+              className="text-xs"
+            >
+              <span className="mr-1">🔄</span> Refresh
+            </Button>
           </div>
         </div>
         <DataTable columns={columns} data={liveUMKMs} emptyText="Belum ada UMKM." />

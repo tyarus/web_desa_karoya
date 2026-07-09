@@ -12,7 +12,6 @@ import type { ColumnDef } from '@tanstack/react-table';
 import { Edit3, ChevronLeft, ChevronRight, X, Save } from 'lucide-react';
 
 import { deleteUMKM, deleteUMKMProduct, saveUMKM, saveUMKMProduct, toggleUMKMStatus } from '@/app/admin/actions/umkm';
-import { uploadProductImage } from '@/lib/supabase/storage-client';
 import { ConfirmDeleteDialog } from '@/components/admin/confirm-delete-dialog';
 import { DataTable } from '@/components/admin/data-table';
 import { UMKMStepper, UMKMStepperProgress, Step } from '@/components/admin/umkm-stepper';

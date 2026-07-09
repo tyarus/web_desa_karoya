@@ -51,6 +51,7 @@ export async function saveUMKM(input: FormData | UMKMInput) {
   let templateId = 'A';
   let status: 'draft' | 'published' | 'active' = 'draft';
   let id: string | undefined;
+  let coverUploadFailed = false;
 
   if (input instanceof FormData) {
     name = formString(input.get('name'));
@@ -70,20 +71,26 @@ export async function saveUMKM(input: FormData | UMKMInput) {
     console.log('FormData values:', { name, description, owner_name, templateId, status, id });
 
     const file = formFile(input.get('cover'));
+    console.log('Cover file:', file ? `File(${file.name}, ${file.size} bytes)` : 'No file');
 
     if (file) {
       try {
-        console.log('File found, uploading...');
+        console.log('Uploading cover image...');
         const uploadedUrl = await uploadPublicImage(supabase, file, 'umkm');
         coverUrl = uploadedUrl ?? undefined;
+        console.log('Cover upload result:', uploadedUrl ? 'Success' : 'Failed (null)');
+        if (!uploadedUrl) {
+          coverUploadFailed = true;
+        }
       } catch (uploadError) {
         console.error('Cover image upload failed:', uploadError);
+        coverUploadFailed = true;
         // Continue without cover image - don't fail the whole save
         coverUrl = undefined;
       }
     } else {
       coverUrl = formString(input.get('cover_url')) || undefined;
-      console.log('Using cover_url:', coverUrl);
+      console.log('Using existing cover_url:', coverUrl);
     }
   } else {
     name = input.name;
@@ -152,7 +159,7 @@ export async function saveUMKM(input: FormData | UMKMInput) {
       revalidatePath(`/umkm/${slug}`);
       return {
         ok: true,
-        message: 'UMKM berhasil diperbarui',
+        message: coverUploadFailed ? 'UMKM berhasil diperbarui (gambar cover tidak terupload)' : 'UMKM berhasil diperbarui',
         data,
       };
     } else {
@@ -167,7 +174,7 @@ export async function saveUMKM(input: FormData | UMKMInput) {
       revalidatePath('/admin/umkm');
       return {
         ok: true,
-        message: 'UMKM berhasil ditambahkan',
+        message: coverUploadFailed ? 'UMKM berhasil ditambahkan (gambar cover tidak terupload)' : 'UMKM berhasil ditambahkan',
         data,
       };
     }
@@ -213,6 +220,7 @@ export async function saveUMKMProduct(input: FormData | UMKMProductInput) {
   let price = '';
   let imageUrl: string | undefined;
   let id: string | undefined;
+  let uploadFailed = false;
 
   if (input instanceof FormData) {
     umkm_id = formString(input.get('umkm_id'));
@@ -225,19 +233,21 @@ export async function saveUMKMProduct(input: FormData | UMKMProductInput) {
 
     // First check for image file upload (from client-side upload)
     const file = formFile(input.get('image'));
+    console.log('File from FormData:', file ? `File(${file.name}, ${file.size} bytes, ${file.type})` : 'No file');
 
     if (file) {
       try {
-        console.log('Uploading product image file...');
+        console.log('Uploading product image...');
         const uploadedUrl = await uploadPublicImage(
           supabase,
           file,
           'umkm/products'
         );
         imageUrl = uploadedUrl ?? undefined;
-        console.log('Image uploaded, URL:', imageUrl);
+        console.log('Image upload result:', uploadedUrl ? 'Success' : 'Failed (null)');
       } catch (uploadError) {
-        console.error('Image upload failed:', uploadError);
+        console.error('Image upload failed with error:', uploadError);
+        uploadFailed = true;
         // Continue without image - don't fail the whole product save
         imageUrl = undefined;
       }
@@ -293,7 +303,7 @@ export async function saveUMKMProduct(input: FormData | UMKMProductInput) {
       revalidatePath('/admin/umkm');
       return {
         ok: true,
-        message: 'Produk berhasil diperbarui',
+        message: uploadFailed ? 'Produk berhasil diperbarui (gambar tidak terupload)' : 'Produk berhasil diperbarui',
         data,
       };
     } else {
@@ -308,7 +318,7 @@ export async function saveUMKMProduct(input: FormData | UMKMProductInput) {
       revalidatePath('/admin/umkm');
       return {
         ok: true,
-        message: 'Produk berhasil ditambahkan',
+        message: uploadFailed ? 'Produk berhasil ditambahkan (gambar tidak terupload)' : 'Produk berhasil ditambahkan',
         data,
       };
     }

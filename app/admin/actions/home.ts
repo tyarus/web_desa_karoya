@@ -17,10 +17,18 @@ import { getErrorMessage } from "@/lib/utils";
 import { homeSchema, type HomeInput } from "@/lib/validations";
 
 export async function saveHomeContent(formData: FormData | HomeInput) {
+  console.log('=== saveHomeContent called ===');
+
   // Handle both FormData and plain object for compatibility
   let input: HomeInput;
-  
+
   if (formData instanceof FormData) {
+    // Log FormData entries for debugging
+    console.log('FormData entries:');
+    for (const [key, value] of formData.entries()) {
+      console.log(`  ${key}:`, value instanceof File ? `File(${value.name}, ${value.size})` : value);
+    }
+
     input = {
       hero_title: formString(formData.get("hero_title")),
       hero_subtitle: formString(formData.get("hero_subtitle")),
@@ -30,6 +38,7 @@ export async function saveHomeContent(formData: FormData | HomeInput) {
       stats_json: formString(formData.get("stats_json")),
       featured_services_json: formString(formData.get("featured_services_json")),
     };
+    console.log('Parsed input:', input);
   } else {
     input = formData;
   }
@@ -37,6 +46,7 @@ export async function saveHomeContent(formData: FormData | HomeInput) {
   const parsed = homeSchema.safeParse(input);
 
   if (!parsed.success) {
+    console.log('Validation failed:', parsed.error);
     return actionError("Periksa kembali konten beranda.", {
       ...flattenFieldErrors(parsed.error),
     });
@@ -51,12 +61,14 @@ export async function saveHomeContent(formData: FormData | HomeInput) {
     if (formData instanceof FormData) {
       const file = formFile(formData.get("hero_image"));
       if (file) {
+        console.log('Uploading hero image...');
         const uploadedUrl = await uploadPublicImage(
           supabase,
           file,
           "home"
         );
         heroImageUrl = uploadedUrl ?? data.hero_image_url ?? null;
+        console.log('Upload result:', uploadedUrl);
       }
     }
 
@@ -70,18 +82,24 @@ export async function saveHomeContent(formData: FormData | HomeInput) {
       stats: JSON.parse(data.stats_json) as Json,
       featured_services: JSON.parse(data.featured_services_json) as Json,
     };
+    console.log('Upsert payload:', payload);
 
     const { error } = await supabase
       .from("home_sections")
       .upsert(payload, { onConflict: "id" });
 
-    if (error) throw error;
+    if (error) {
+      console.error('Supabase error:', error);
+      throw error;
+    }
 
     revalidatePath("/");
     revalidatePath("/admin/beranda");
 
+    console.log('Save successful!');
     return actionSuccess("Konten beranda berhasil disimpan.");
   } catch (error) {
+    console.error('Save error:', error);
     return actionError(getErrorMessage(error));
   }
 }

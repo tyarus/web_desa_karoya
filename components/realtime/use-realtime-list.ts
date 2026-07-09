@@ -49,9 +49,13 @@ export function useRealtimeList<T extends { id: string }>(
 
   useEffect(() => {
     const supabase = createOptionalClient();
-    if (!supabase) return;
+    if (!supabase) {
+      console.warn('Supabase not configured, realtime disabled for', table);
+      return;
+    }
 
     const channelName = `list:${table}:${Math.random().toString(36).slice(2)}`;
+
     const channel = supabase
       .channel(channelName)
       .on(
@@ -91,7 +95,15 @@ export function useRealtimeList<T extends { id: string }>(
           });
         }
       )
-      .subscribe();
+      .subscribe((status: string) => {
+        if (status === 'SUBSCRIBED') {
+          console.log('Realtime subscribed to', table);
+        } else if (status === 'CHANNEL_ERROR') {
+          console.error('Realtime channel error for', table);
+        } else if (status === 'TIMED_OUT') {
+          console.warn('Realtime connection timed out for', table);
+        }
+      });
 
     return () => {
       channel.unsubscribe();

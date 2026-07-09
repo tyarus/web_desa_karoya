@@ -264,20 +264,11 @@ export function UMKMManager({ initialUMKMs, initialProducts }: UMKMManagerProps)
           for (const product of products) {
             console.log('Saving product:', product.name);
 
-            // Upload image file if exists (local file, not URL)
-            let finalImageUrl = product.image_url;
-            if (product.image_file) {
-              console.log('Uploading product image...');
-              const uploadedUrl = await uploadProductImage(product.image_file);
-              if (uploadedUrl) {
-                finalImageUrl = uploadedUrl;
-                console.log('Image uploaded:', finalImageUrl);
-              }
-            }
-
             // Skip blob URLs - they are temporary and shouldn't be saved
+            // Just send the file to server and let server handle upload
+            let finalImageUrl = product.image_url;
             if (finalImageUrl?.startsWith('blob:')) {
-              console.log('Skipping blob URL for product image');
+              console.log('Clearing blob URL, will upload file to server');
               finalImageUrl = '';
             }
 
@@ -288,8 +279,7 @@ export function UMKMManager({ initialUMKMs, initialProducts }: UMKMManagerProps)
             productFormData.set('price', product.price || '');
             productFormData.set('image_url', finalImageUrl || '');
 
-            // If there's a local file, also send it directly for upload
-            // This ensures the server can handle file uploads properly
+            // Send file to server for upload (server handles upload with proper error handling)
             if (product.image_file) {
               productFormData.set('image', product.image_file);
             }

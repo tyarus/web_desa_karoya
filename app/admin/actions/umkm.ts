@@ -72,9 +72,15 @@ export async function saveUMKM(input: FormData | UMKMInput) {
     const file = formFile(input.get('cover'));
 
     if (file) {
-      console.log('File found, uploading...');
-      const uploadedUrl = await uploadPublicImage(supabase, file, 'umkm');
-      coverUrl = uploadedUrl ?? undefined;
+      try {
+        console.log('File found, uploading...');
+        const uploadedUrl = await uploadPublicImage(supabase, file, 'umkm');
+        coverUrl = uploadedUrl ?? undefined;
+      } catch (uploadError) {
+        console.error('Cover image upload failed:', uploadError);
+        // Continue without cover image - don't fail the whole save
+        coverUrl = undefined;
+      }
     } else {
       coverUrl = formString(input.get('cover_url')) || undefined;
       console.log('Using cover_url:', coverUrl);
@@ -142,6 +148,7 @@ export async function saveUMKM(input: FormData | UMKMInput) {
 
       if (error) throw error;
       revalidatePath('/umkm');
+      revalidatePath('/admin/umkm');
       revalidatePath(`/umkm/${slug}`);
       return {
         ok: true,
@@ -157,6 +164,7 @@ export async function saveUMKM(input: FormData | UMKMInput) {
 
       if (error) throw error;
       revalidatePath('/umkm');
+      revalidatePath('/admin/umkm');
       return {
         ok: true,
         message: 'UMKM berhasil ditambahkan',
@@ -219,14 +227,20 @@ export async function saveUMKMProduct(input: FormData | UMKMProductInput) {
     const file = formFile(input.get('image'));
 
     if (file) {
-      console.log('Uploading product image file...');
-      const uploadedUrl = await uploadPublicImage(
-        supabase,
-        file,
-        'umkm/products'
-      );
-      imageUrl = uploadedUrl ?? undefined;
-      console.log('Image uploaded, URL:', imageUrl);
+      try {
+        console.log('Uploading product image file...');
+        const uploadedUrl = await uploadPublicImage(
+          supabase,
+          file,
+          'umkm/products'
+        );
+        imageUrl = uploadedUrl ?? undefined;
+        console.log('Image uploaded, URL:', imageUrl);
+      } catch (uploadError) {
+        console.error('Image upload failed:', uploadError);
+        // Continue without image - don't fail the whole product save
+        imageUrl = undefined;
+      }
     } else {
       // Fallback to image_url field (might be a Supabase URL from client-side upload)
       imageUrl = formString(input.get('image_url')) || undefined;
@@ -276,6 +290,7 @@ export async function saveUMKMProduct(input: FormData | UMKMProductInput) {
 
       if (error) throw error;
       revalidatePath('/umkm');
+      revalidatePath('/admin/umkm');
       return {
         ok: true,
         message: 'Produk berhasil diperbarui',
@@ -290,6 +305,7 @@ export async function saveUMKMProduct(input: FormData | UMKMProductInput) {
 
       if (error) throw error;
       revalidatePath('/umkm');
+      revalidatePath('/admin/umkm');
       return {
         ok: true,
         message: 'Produk berhasil ditambahkan',

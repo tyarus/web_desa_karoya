@@ -78,9 +78,9 @@ export function HomeEditor({
   };
 
   // Sync stats_array changes to stats_json for submission
-  function onSubmit(input: HomeInput & { stats_array: StatItem[] }) {
-    console.log('=== HomeEditor onSubmit called ===');
-    console.log('Input:', JSON.stringify(input, null, 2));
+  const handleSubmit = form.handleSubmit((input) => {
+    console.log('=== handleSubmit callback called ===');
+    console.log('Validated input:', JSON.stringify(input, null, 2));
 
     startTransition(async () => {
       try {
@@ -114,12 +114,15 @@ export function HomeEditor({
         toast.error('Terjadi kesalahan saat menyimpan');
       }
     });
-  }
+  }, (errors) => {
+    console.log('=== Form validation failed ===');
+    console.log('Validation errors:', errors);
+  });
 
   return (
     <div className="grid gap-6 xl:grid-cols-[1fr_460px]">
       <form
-        onSubmit={form.handleSubmit(onSubmit)}
+        onSubmit={handleSubmit}
         className="rounded-xl border border-zinc-200 bg-white p-6"
       >
         <div className="grid gap-5">

@@ -41,10 +41,8 @@ export const homeSchema = z.object({
   hero_image_url: optionalUrl,
   hero_cta_label: optionalText,
   hero_cta_href: z.string().trim().default("/layanan"),
-  stats_json: z.string().refine(hasValidJson, "Statistik harus berupa JSON."),
-  featured_services_json: z
-    .string()
-    .refine(hasValidJson, "Layanan unggulan harus berupa JSON."),
+  stats_json: z.string().default("[]"),
+  featured_services_json: z.string().default("[]"),
 });
 
 export const profileSchema = z.object({

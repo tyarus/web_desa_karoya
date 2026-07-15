@@ -29,14 +29,35 @@ export async function saveHomeContent(formData: FormData | HomeInput) {
       console.log(`  ${key}:`, value instanceof File ? `File(${value.name}, ${value.size})` : value);
     }
 
+    const hero_title = formString(formData.get("hero_title"));
+    const hero_subtitle = formString(formData.get("hero_subtitle"));
+    const hero_image_url = formOptionalString(formData.get("hero_image_url"));
+    const hero_cta_label = formOptionalString(formData.get("hero_cta_label"));
+    const hero_cta_href = formString(formData.get("hero_cta_href"));
+    let stats_json = formString(formData.get("stats_json"));
+    const featured_services_json = formString(formData.get("featured_services_json")) || "[]";
+
+    // Ensure stats_json is valid JSON
+    if (!stats_json || stats_json.trim() === '') {
+      stats_json = "[]";
+    }
+    // Try to parse and re-stringify to normalize
+    try {
+      const parsed = JSON.parse(stats_json);
+      stats_json = JSON.stringify(parsed);
+    } catch {
+      console.log('stats_json parse failed, using empty array');
+      stats_json = "[]";
+    }
+
     input = {
-      hero_title: formString(formData.get("hero_title")),
-      hero_subtitle: formString(formData.get("hero_subtitle")),
-      hero_image_url: formOptionalString(formData.get("hero_image_url")),
-      hero_cta_label: formOptionalString(formData.get("hero_cta_label")),
-      hero_cta_href: formString(formData.get("hero_cta_href")),
-      stats_json: formString(formData.get("stats_json")),
-      featured_services_json: formString(formData.get("featured_services_json")),
+      hero_title,
+      hero_subtitle,
+      hero_image_url,
+      hero_cta_label,
+      hero_cta_href,
+      stats_json,
+      featured_services_json,
     };
     console.log('Parsed input:', input);
   } else {
@@ -72,6 +93,23 @@ export async function saveHomeContent(formData: FormData | HomeInput) {
       }
     }
 
+    // Parse JSON fields safely
+    let stats: Json = [];
+    let featuredServices: Json = [];
+    console.log('Parsing stats_json:', data.stats_json);
+    try {
+      stats = JSON.parse(data.stats_json || "[]");
+      console.log('Parsed stats:', JSON.stringify(stats));
+    } catch {
+      console.log('Failed to parse stats_json');
+    }
+    try {
+      featuredServices = JSON.parse(data.featured_services_json || "[]");
+      console.log('Parsed featuredServices:', JSON.stringify(featuredServices));
+    } catch {
+      console.log('Failed to parse featured_services_json');
+    }
+
     const payload = {
       id: "default",
       hero_title: data.hero_title,
@@ -79,14 +117,19 @@ export async function saveHomeContent(formData: FormData | HomeInput) {
       hero_image_url: heroImageUrl,
       hero_cta_label: data.hero_cta_label || null,
       hero_cta_href: data.hero_cta_href,
-      stats: JSON.parse(data.stats_json) as Json,
-      featured_services: JSON.parse(data.featured_services_json) as Json,
+      stats,
+      featured_services: featuredServices,
     };
-    console.log('Upsert payload:', payload);
+    console.log('Upsert payload:', JSON.stringify(payload, null, 2));
 
-    const { error } = await supabase
+    const { error, status } = await supabase
       .from("home_sections")
-      .upsert(payload, { onConflict: "id" });
+      .upsert(payload, { onConflict: "id" })
+      .select()
+      .single();
+
+    console.log('Upsert result:', { error, status });
+    console.log('Upserted data:', status === 200 || status === 201 ? 'Success' : 'Failed');
 
     if (error) {
       console.error('Supabase error:', error);

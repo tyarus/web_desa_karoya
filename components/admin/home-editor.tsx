@@ -5,7 +5,7 @@
 
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Plus, Save, Trash2 } from "lucide-react";
-import { useRef, useTransition } from "react";
+import { useEffect, useRef, useTransition } from "react";
 import { useFieldArray, useForm } from "react-hook-form";
 import { toast } from "sonner";
 
@@ -54,6 +54,7 @@ export function HomeEditor({
       hero_cta_href: home.hero_cta_href ?? "/layanan",
       stats_json: stringifyJson(home.stats, defaultStats),
       stats_array: initialStats,
+      featured_services_json: home.featured_services ? JSON.stringify(home.featured_services) : "[]",
     },
   });
 
@@ -61,6 +62,20 @@ export function HomeEditor({
     control: form.control,
     name: "stats_array",
   });
+
+  // Sync stats_array to stats_json whenever stats_array changes
+  useEffect(() => {
+    const subscription = form.watch((data) => {
+      const statsArray = data.stats_array;
+      if (Array.isArray(statsArray)) {
+        form.setValue("stats_json", JSON.stringify(statsArray), {
+          shouldValidate: false,
+          shouldDirty: false,
+        });
+      }
+    });
+    return () => subscription.unsubscribe();
+  }, [form]);
 
   const values = form.watch();
   const previewHome: Tables<"home_sections"> = {
@@ -77,10 +92,14 @@ export function HomeEditor({
     featured_services: liveHome.featured_services,
   };
 
-  // Sync stats_array changes to stats_json for submission
+  // Submit handler - manually construct data to avoid hidden input issues
   const handleSubmit = form.handleSubmit((input) => {
     console.log('=== handleSubmit callback called ===');
-    console.log('Validated input:', JSON.stringify(input, null, 2));
+    console.log('Form input stats_array:', JSON.stringify(input.stats_array, null, 2));
+
+    // Get current values from form state (not the validated input)
+    const currentValues = form.getValues();
+    console.log('Current form values stats_array:', JSON.stringify(currentValues.stats_array, null, 2));
 
     startTransition(async () => {
       try {
@@ -90,10 +109,11 @@ export function HomeEditor({
         formData.set("hero_image_url", input.hero_image_url ?? "");
         formData.set("hero_cta_label", input.hero_cta_label ?? "");
         formData.set("hero_cta_href", input.hero_cta_href);
-        // Convert stats_array back to JSON for storage
-        formData.set("stats_json", JSON.stringify(input.stats_array));
-        // Set empty featured services (can be expanded later)
-        formData.set("featured_services_json", JSON.stringify([]));
+        // Use current form values for stats_array (not the validated input which might be stale)
+        const statsArray = currentValues.stats_array || [];
+        console.log('Sending stats_array:', JSON.stringify(statsArray));
+        formData.set("stats_json", JSON.stringify(statsArray));
+        formData.set("featured_services_json", currentValues.featured_services_json || "[]");
 
         if (fileRef.current?.files?.[0]) {
           formData.set("hero_image", fileRef.current.files[0]);
@@ -117,7 +137,6 @@ export function HomeEditor({
   }, (errors) => {
     console.log('=== Form validation failed ===');
     console.log('Validation errors:', JSON.stringify(errors, null, 2));
-    // Show errors as toast
     const errorMessages = Object.values(errors).map((e: any) => e?.message).filter(Boolean);
     if (errorMessages.length > 0) {
       toast.error(errorMessages[0]);
@@ -185,8 +204,9 @@ export function HomeEditor({
               </Button>
             </div>
 
-            {/* Hidden textarea for validation */}
+            {/* Hidden inputs for stats_json sync */}
             <Input type="hidden" {...form.register("stats_json")} />
+            <Input type="hidden" {...form.register("featured_services_json")} />
 
             {/* Stats Table Header */}
             <div className="grid grid-cols-[1fr_120px_40px] gap-2 px-1">

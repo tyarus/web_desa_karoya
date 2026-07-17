@@ -12,6 +12,7 @@ import {
 } from "@/lib/action-utils";
 import { requireAdmin } from "@/lib/auth-admin";
 import { uploadPublicImage } from "@/lib/supabase/storage";
+import { uploadPublicImageService } from "@/lib/supabase/service";
 import type { Json } from "@/lib/database.types";
 import { getErrorMessage } from "@/lib/utils";
 import { homeSchema, type HomeInput } from "@/lib/validations";
@@ -82,14 +83,14 @@ export async function saveHomeContent(formData: FormData | HomeInput) {
     if (formData instanceof FormData) {
       const file = formFile(formData.get("hero_image"));
       if (file) {
-        console.log('Uploading hero image...');
-        const uploadedUrl = await uploadPublicImage(
-          supabase,
-          file,
-          "home"
-        );
-        heroImageUrl = uploadedUrl ?? data.hero_image_url ?? null;
-        console.log('Upload result:', uploadedUrl);
+        console.log('Uploading hero image using service client...');
+        try {
+          heroImageUrl = await uploadPublicImageService(file, "home") ?? data.hero_image_url ?? null;
+        } catch (serviceError) {
+          console.log('Service client upload failed, trying regular client:', serviceError);
+          heroImageUrl = await uploadPublicImage(supabase, file, "home") ?? data.hero_image_url ?? null;
+        }
+        console.log('Upload result:', heroImageUrl);
       }
     }
 

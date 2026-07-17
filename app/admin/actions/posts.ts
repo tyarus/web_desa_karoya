@@ -12,13 +12,14 @@ import {
 } from "@/lib/action-utils";
 import { requireAdmin } from "@/lib/auth-admin";
 import { uploadPublicImage } from "@/lib/supabase/storage";
+import { uploadPublicImageService } from "@/lib/supabase/service";
 import { getErrorMessage, slugify } from "@/lib/utils";
 import { postSchema, type PostInput } from "@/lib/validations";
 
 export async function savePost(formData: FormData | PostInput) {
   // Handle both FormData and plain object for compatibility
   let input: PostInput;
-  
+
   if (formData instanceof FormData) {
     input = {
       id: formOptionalString(formData.get("id")),
@@ -53,8 +54,12 @@ export async function savePost(formData: FormData | PostInput) {
     if (formData instanceof FormData) {
       const file = formFile(formData.get("cover"));
       if (file) {
-        const uploadedUrl = await uploadPublicImage(supabase, file, "posts");
-        coverUrl = uploadedUrl ?? data.cover_url ?? null;
+        try {
+          coverUrl = await uploadPublicImageService(file, "posts") ?? data.cover_url ?? null;
+        } catch (serviceError) {
+          console.log('Service client upload failed, trying regular client:', serviceError);
+          coverUrl = await uploadPublicImage(supabase, file, "posts") ?? data.cover_url ?? null;
+        }
       }
     }
 

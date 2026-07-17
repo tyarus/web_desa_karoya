@@ -2,6 +2,7 @@
 'use server';
 
 import { createClient } from '@/lib/supabase/server';
+import { createServiceClient, uploadPublicImageService } from '@/lib/supabase/service';
 import { uploadPublicImage } from '@/lib/supabase/storage';
 import { formFile, formString } from '@/lib/action-utils';
 import { normalizeGoogleMapsEmbedUrl } from '@/lib/utils';
@@ -75,10 +76,20 @@ export async function saveUMKM(input: FormData | UMKMInput) {
 
     if (file) {
       try {
-        console.log('Uploading cover image...');
-        const uploadedUrl = await uploadPublicImage(supabase, file, 'umkm');
+        console.log('Uploading cover image using service client...');
+        // Try service client first (bypasses RLS), fall back to regular client
+        let uploadedUrl: string | null | undefined;
+
+        try {
+          uploadedUrl = await uploadPublicImageService(file, 'umkm');
+        } catch (serviceError) {
+          console.log('Service client upload failed, trying regular client:', serviceError);
+          // Fall back to regular upload
+          uploadedUrl = await uploadPublicImage(supabase, file, 'umkm');
+        }
+
         coverUrl = uploadedUrl ?? undefined;
-        console.log('Cover upload result:', uploadedUrl ? 'Success' : 'Failed (null)');
+        console.log('Cover upload result:', uploadedUrl ? `Success: ${uploadedUrl}` : 'Failed (null)');
         if (!uploadedUrl) {
           coverUploadFailed = true;
         }
@@ -252,6 +263,7 @@ export async function saveUMKMProduct(input: FormData | UMKMProductInput) {
   let imageUrl: string | undefined;
   let id: string | undefined;
   let uploadFailed = false;
+  let uploadErrorMessage = '';
 
   if (input instanceof FormData) {
     umkm_id = formString(input.get('umkm_id'));
@@ -268,17 +280,42 @@ export async function saveUMKMProduct(input: FormData | UMKMProductInput) {
 
     if (file) {
       try {
-        console.log('Uploading product image...');
-        const uploadedUrl = await uploadPublicImage(
-          supabase,
-          file,
-          'umkm/products'
-        );
+        console.log('Uploading product image using service client...');
+        // Try service client first (bypasses RLS), fall back to regular client
+        let uploadedUrl: string | null | undefined;
+
+        try {
+          uploadedUrl = await uploadPublicImageService(file, 'umkm/products');
+        } catch (serviceError) {
+          console.log('Service client upload failed, trying regular client:', serviceError);
+          // Fall back to regular upload
+          uploadedUrl = await uploadPublicImage(
+            supabase,
+            file,
+            'umkm/products'
+          );
+        }
+
         imageUrl = uploadedUrl ?? undefined;
-        console.log('Image upload result:', uploadedUrl ? 'Success' : 'Failed (null)');
+        console.log('Image upload result:', uploadedUrl ? `Success: ${uploadedUrl}` : 'Failed (null)');
+
+        // Also check if the URL is actually a valid Supabase URL
+        if (uploadedUrl) {
+          // Verify the URL is a proper Supabase storage URL
+          if (!uploadedUrl.includes('supabase') || !uploadedUrl.includes('storage')) {
+            console.error('Upload returned invalid URL:', uploadedUrl);
+            uploadFailed = true;
+            uploadErrorMessage = 'URL yang dikembalikan bukan URL Supabase Storage yang valid';
+            imageUrl = undefined;
+          }
+        } else {
+          uploadFailed = true;
+          uploadErrorMessage = 'Upload gagal - tidak ada URL dikembalikan';
+        }
       } catch (uploadError) {
         console.error('Image upload failed with error:', uploadError);
         uploadFailed = true;
+        uploadErrorMessage = uploadError instanceof Error ? uploadError.message : 'Unknown error';
         // Continue without image - don't fail the whole product save
         imageUrl = undefined;
       }
@@ -291,6 +328,8 @@ export async function saveUMKMProduct(input: FormData | UMKMProductInput) {
       if (imageUrl?.startsWith('blob:')) {
         console.log('Warning: blob URL detected in FormData, clearing');
         imageUrl = undefined;
+        uploadFailed = true;
+        uploadErrorMessage = 'Gambar lokal tidak berhasil di-upload. Silakan coba lagi.';
       }
     }
   } else {
@@ -332,9 +371,15 @@ export async function saveUMKMProduct(input: FormData | UMKMProductInput) {
       if (error) throw error;
       revalidatePath('/umkm');
       revalidatePath('/admin/umkm');
+
+      // Include upload warning in success message if image upload failed
+      const message = uploadFailed
+        ? `Produk berhasil diperbarui (gambar tidak terupload${uploadErrorMessage ? `: ${uploadErrorMessage}` : ''})`
+        : 'Produk berhasil diperbarui';
+
       return {
         ok: true,
-        message: uploadFailed ? 'Produk berhasil diperbarui (gambar tidak terupload)' : 'Produk berhasil diperbarui',
+        message,
         data,
       };
     } else {
@@ -347,9 +392,15 @@ export async function saveUMKMProduct(input: FormData | UMKMProductInput) {
       if (error) throw error;
       revalidatePath('/umkm');
       revalidatePath('/admin/umkm');
+
+      // Include upload warning in success message if image upload failed
+      const message = uploadFailed
+        ? `Produk berhasil ditambahkan (gambar tidak terupload${uploadErrorMessage ? `: ${uploadErrorMessage}` : ''})`
+        : 'Produk berhasil ditambahkan';
+
       return {
         ok: true,
-        message: uploadFailed ? 'Produk berhasil ditambahkan (gambar tidak terupload)' : 'Produk berhasil ditambahkan',
+        message,
         data,
       };
     }

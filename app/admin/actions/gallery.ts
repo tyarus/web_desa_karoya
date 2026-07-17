@@ -12,6 +12,7 @@ import {
 } from "@/lib/action-utils";
 import { requireAdmin } from "@/lib/auth-admin";
 import { uploadPublicImage } from "@/lib/supabase/storage";
+import { uploadPublicImageService } from "@/lib/supabase/service";
 import { getErrorMessage } from "@/lib/utils";
 import { gallerySchema } from "@/lib/validations";
 
@@ -31,8 +32,18 @@ export async function saveGalleryItem(formData: FormData) {
 
   try {
     const { supabase } = await requireAdmin();
-      const file = formFile(formData.get("image"));
-      const uploadedUrl = await uploadPublicImage(supabase, file, "gallery");
+    const file = formFile(formData.get("image"));
+    let uploadedUrl = null;
+
+    if (file) {
+      try {
+        uploadedUrl = await uploadPublicImageService(file, "gallery");
+      } catch (serviceError) {
+        console.log('Service client upload failed, trying regular client:', serviceError);
+        uploadedUrl = await uploadPublicImage(supabase, file, "gallery");
+      }
+    }
+
     const imageUrl = uploadedUrl ?? parsed.data.image_url ?? null;
 
     if (!imageUrl) {

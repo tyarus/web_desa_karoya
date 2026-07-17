@@ -18,11 +18,21 @@ export default async function AdminPanelLayout({
 
   return (
     <div className="min-h-screen bg-[#F8F9FA]">
+      {/* Desktop Sidebar - Hidden on mobile */}
       <AdminSidebar />
+
+      {/* Main Content Wrapper */}
       <div className="lg:pl-60">
+        {/* Header */}
         <AdminHeader email={admin.email} />
+
+        {/* Mobile Bottom Navigation */}
         <AdminMobileNav />
-        <main className="px-4 py-6 sm:px-6">{children}</main>
+
+        {/* Page Content - Adjusted padding for bottom nav on mobile */}
+        <main className="px-4 py-4 sm:px-6 sm:py-6 pb-24 lg:pb-6">
+          {children}
+        </main>
       </div>
     </div>
   );

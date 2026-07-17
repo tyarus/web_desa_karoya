@@ -316,6 +316,11 @@ export function UMKMManager({ initialUMKMs, initialProducts }: UMKMManagerProps)
             console.log('Product save result:', productResult);
             if (!productResult.ok) {
               console.error('Failed to save product:', productResult.message);
+              // Show error for product save failure
+              toast.error(`Gagal menyimpan produk "${product.name}": ${productResult.message}`);
+            } else if (productResult.message.includes('gambar tidak terupload')) {
+              // Show warning if product saved but image failed
+              toast.warning(productResult.message);
             }
           }
         }

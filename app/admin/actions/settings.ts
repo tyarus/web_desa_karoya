@@ -12,6 +12,7 @@ import {
 } from "@/lib/action-utils";
 import { requireAdmin } from "@/lib/auth-admin";
 import { uploadPublicImage } from "@/lib/supabase/storage";
+import { uploadPublicImageService } from "@/lib/supabase/service";
 import { getErrorMessage } from "@/lib/utils";
 import { settingsSchema } from "@/lib/validations";
 
@@ -37,11 +38,17 @@ export async function saveVillageSettings(formData: FormData) {
 
   try {
     const { supabase } = await requireAdmin();
-    const uploadedLogoUrl = await uploadPublicImage(
-      supabase,
-      formFile(formData.get("logo")),
-      "logo",
-    );
+    let uploadedLogoUrl = null;
+
+    const logoFile = formFile(formData.get("logo"));
+    if (logoFile) {
+      try {
+        uploadedLogoUrl = await uploadPublicImageService(logoFile, "logo");
+      } catch (serviceError) {
+        console.log('Service client upload failed, trying regular client:', serviceError);
+        uploadedLogoUrl = await uploadPublicImage(supabase, logoFile, "logo");
+      }
+    }
 
     const { error } = await supabase.from("village_settings").upsert(
       {
